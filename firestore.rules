@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only access their own data
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      
+      // Books collection
+      match /books/{bookId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+        
+        // Parts collection
+        match /parts/{partId} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
+          
+          // Chapters collection
+          match /chapters/{chapterId} {
+            allow read, write: if request.auth != null && request.auth.uid == uid;
+            
+            // Sections collection
+            match /sections/{sectionId} {
+              allow read, write: if request.auth != null && request.auth.uid == uid;
+              
+              // Blocks collection
+              match /blocks/{blockId} {
+                allow read, write: if request.auth != null && request.auth.uid == uid;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
