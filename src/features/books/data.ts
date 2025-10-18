@@ -6,6 +6,7 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc,
+  writeBatch,
   query, 
   orderBy, 
   DocumentReference 
@@ -111,6 +112,29 @@ export async function updatePart(
 ): Promise<void> {
   const partRef = doc(db, 'users', uid, 'books', bookId, 'parts', partId);
   await updateDoc(partRef, withTimestampsForUpdate(data));
+}
+
+/**
+ * Reorders parts by updating their sortKeys
+ * @param uid - User ID
+ * @param bookId - Book ID
+ * @param partIds - Array of part IDs in the new order
+ */
+export async function reorderParts(
+  uid: string,
+  bookId: string,
+  partIds: string[]
+): Promise<void> {
+  const batch = writeBatch(db);
+  
+  // Use batch write for atomic updates
+  for (let index = 0; index < partIds.length; index++) {
+    const partId = partIds[index];
+    const partRef = doc(db, 'users', uid, 'books', bookId, 'parts', partId);
+    batch.update(partRef, withTimestampsForUpdate({ sortKey: index * 1000 }));
+  }
+  
+  await batch.commit();
 }
 
 /**
@@ -248,6 +272,25 @@ export async function updateSection(
 ): Promise<void> {
   const sectionRef = doc(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters', chapterId, 'sections', sectionId);
   await updateDoc(sectionRef, withTimestampsForUpdate(data));
+}
+
+/**
+ * Deletes a section
+ * @param uid - User ID
+ * @param bookId - Book ID
+ * @param partId - Part ID
+ * @param chapterId - Chapter ID
+ * @param sectionId - Section ID
+ */
+export async function deleteSection(
+  uid: string,
+  bookId: string,
+  partId: string,
+  chapterId: string,
+  sectionId: string
+): Promise<void> {
+  const sectionRef = doc(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters', chapterId, 'sections', sectionId);
+  await deleteDoc(sectionRef);
 }
 
 // Block CRUD
