@@ -3,14 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build --turbopack",
     "start": "next start",
+    "clean": "rm -rf .next node_modules/.cache && npm run build",
     "lint": "biome check",
     "format": "biome format --write"
   },
   "dependencies": {
     "firebase": "^12.4.0",
+    "firebase-admin": "^13.5.0",
     "next": "15.5.5",
     "react": "19.1.0",
     "react-dom": "19.1.0"
@@ -23,5 +25,6 @@
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

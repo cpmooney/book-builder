@@ -1,8 +1,8 @@
 // components/sign-in.tsx
 'use client';
-import { getFirebaseAuth } from '@lib/firebase/firebase-client';
+import { getFirebaseAuth } from '@/lib/firebase-client';
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
-import { useAuth } from '@/app/components/AuthProvider';
+import { useAuth } from './AuthProvider';
 
 export function SignIn() {
   const { user, loading } = useAuth();
@@ -31,7 +31,21 @@ export function SignIn() {
   };
 
   const handleSignOut = async () => {
-    await signOut(auth);
+    try {
+      // Sign out from Firebase client-side
+      await signOut(auth);
+      
+      // Call server-side sign out to clear cookies
+      await fetch('/api/sign-out', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      // Redirect to home page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   if (loading) return <div className="text-white">Loading...</div>;

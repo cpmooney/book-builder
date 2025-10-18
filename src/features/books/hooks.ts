@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type { Unsubscribe } from 'firebase/firestore';
 import { 
   getBookTOC, 
   getPartTOC, 
@@ -32,8 +31,6 @@ export function useBookTOC(uid: string, bookId: string): UseDataResult<{ parts: 
       return;
     }
 
-    let unsubscribe: Unsubscribe | null = null;
-
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -49,12 +46,6 @@ export function useBookTOC(uid: string, bookId: string): UseDataResult<{ parts: 
     };
 
     fetchData();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
   }, [uid, bookId]);
 
   return { data, loading, error };
