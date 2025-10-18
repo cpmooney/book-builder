@@ -7,7 +7,7 @@ function guaranteeIsClient() {
   }
 }
 
-export function useFirebaseUserId(): Promise<string> {
+export function getFirebaseUserId(): Promise<string> {
   guaranteeIsClient();
   const auth = getAuth(getFirebaseApp());
 

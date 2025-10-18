@@ -16,6 +16,21 @@ import type { Book, Part, Chapter, Section, Block } from '../../types/book-build
 
 // Book CRUD
 /**
+ * Gets all books for the given user
+ * @param uid - User ID
+ * @returns Array of books with their IDs
+ */
+export async function listBooks(uid: string): Promise<Book[]> {
+  const booksRef = collection(db, 'users', uid, 'books');
+  const snapshot = await getDocs(query(booksRef, orderBy('sortKey', 'asc')));
+  
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Book));
+}
+
+/**
  * Creates a new book for the given user
  * @param uid - User ID
  * @param data - Book data (without timestamps/sortKey)

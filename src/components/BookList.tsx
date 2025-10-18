@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBook } from '../features/books/data';
+import { createBook, listBooks } from '../features/books/data';
 
 interface BookListProps {
   userId: string;
@@ -15,35 +15,44 @@ interface Book {
   status: 'draft' | 'published' | 'archived';
 }
 
-// Mock book data - will be replaced with real Firestore data
-const mockBooks: Book[] = [
-  { id: 'book1', title: 'My First Book', status: 'draft' },
-  { id: 'book2', title: 'Advanced Topics', status: 'published' },
-  { id: 'book3', title: 'Work in Progress', status: 'draft' },
-];
-
 export default function BookList({ userId, onSelectBook, selectedBookId }: Readonly<BookListProps>) {
-  const [books, setBooks] = useState<Book[]>(mockBooks);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newBookTitle, setNewBookTitle] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Load books when component mounts or userId changes
+  useEffect(() => {
+    const loadBooks = async () => {
+      if (!userId) return;
+      
+      try {
+        setLoading(true);
+        const userBooks = await listBooks(userId);
+        setBooks(userBooks);
+      } catch (error) {
+        console.error('Error loading books:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBooks();
+  }, [userId]);
 
   const handleCreateBook = async () => {
     if (newBookTitle.trim() && !creating) {
       setCreating(true);
       try {
-        const bookRef = await createBook(userId, {
+        await createBook(userId, {
           title: newBookTitle.trim(),
           status: 'draft'
         });
         
-        // Add to local state (in real app, this would come from a subscription)
-        const newBook: Book = {
-          id: bookRef.id,
-          title: newBookTitle.trim(),
-          status: 'draft'
-        };
-        setBooks(prev => [...prev, newBook]);
+        // Reload books to get the freshly created book
+        const userBooks = await listBooks(userId);
+        setBooks(userBooks);
         
         setNewBookTitle('');
         setShowCreateForm(false);
@@ -55,12 +64,22 @@ export default function BookList({ userId, onSelectBook, selectedBookId }: Reado
     }
   };
 
+  if (loading) {
+    return (
+      <div>
+        <h2>Books</h2>
+        <p>Loading books...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
         <h2>Books</h2>
         {!showCreateForm ? (
           <button
+            type="button"
             onClick={() => setShowCreateForm(true)}
             style={{
               padding: '8px 16px',
@@ -90,6 +109,7 @@ export default function BookList({ userId, onSelectBook, selectedBookId }: Reado
             />
             <div>
               <button
+                type="button"
                 onClick={handleCreateBook}
                 style={{
                   padding: '6px 12px',
@@ -104,6 +124,7 @@ export default function BookList({ userId, onSelectBook, selectedBookId }: Reado
                 Create
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowCreateForm(false);
                   setNewBookTitle('');
@@ -126,24 +147,27 @@ export default function BookList({ userId, onSelectBook, selectedBookId }: Reado
 
       <div>
         {books.map((book) => (
-          <div
+          <button
+            type="button"
             key={book.id}
             onClick={() => onSelectBook(book.id)}
             style={{
+              width: '100%',
               padding: '12px',
               border: '1px solid #ddd',
               borderRadius: '4px',
               marginBottom: '8px',
               cursor: 'pointer',
               backgroundColor: selectedBookId === book.id ? '#e3f2fd' : 'white',
-              borderColor: selectedBookId === book.id ? '#2196f3' : '#ddd'
+              borderColor: selectedBookId === book.id ? '#2196f3' : '#ddd',
+              textAlign: 'left'
             }}
           >
             <div style={{ fontWeight: 'bold' }}>{book.title}</div>
             <div style={{ fontSize: '0.85em', color: '#666' }}>
               Status: {book.status}
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
