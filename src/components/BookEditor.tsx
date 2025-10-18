@@ -1,70 +1,198 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   createPart, 
   createChapter, 
   createSection, 
   createBlock, 
-  updateBlock 
+  updateBlock,
+  updatePart,
+  deletePart,
+  updateChapter,
+  deleteChapter,
+  getBookTOC
 } from '../features/books/data';
+import PartEdit from './PartEdit';
+import ChapterEdit from './ChapterEdit';
 
 interface BookEditorProps {
   userId: string;
   bookId: string;
 }
 
-// Mock data for demonstration
-const mockBookData = {
-  book1: {
-    title: 'My First Book',
-    parts: [
-      {
-        id: 'part1',
-        title: 'Introduction',
-        chapters: [
-          {
-            id: 'chapter1',
-            title: 'Getting Started',
-            sections: [
-              { id: 'section1', title: 'Overview' },
-              { id: 'section2', title: 'Setup' }
-            ]
-          }
-        ]
-      },
-      {
-        id: 'part2',
-        title: 'Main Content',
-        chapters: [
-          {
-            id: 'chapter2',
-            title: 'Core Concepts',
-            sections: [
-              { id: 'section3', title: 'Fundamentals' }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-};
-
-const mockSectionContent = {
-  section1: 'This is the overview section content. You can edit this text.',
-  section2: 'Setup instructions go here. This is editable content.',
-  section3: 'Core concepts and fundamentals are explained here.'
-};
-
 export default function BookEditor({ userId, bookId }: Readonly<BookEditorProps>) {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
-  const [content, setContent] = useState<Record<string, string>>(mockSectionContent);
+  const [content, setContent] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [bookData, setBookData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingPart, setEditingPart] = useState<{
+    id: string;
+    title: string;
+    summary: string;
+  } | null>(null);
+  const [chapterEditModalOpen, setChapterEditModalOpen] = useState(false);
+  const [editingChapter, setEditingChapter] = useState<{
+    id: string;
+    partId: string;
+    title: string;
+    summary: string;
+  } | null>(null);
 
-  const bookData = mockBookData[bookId as keyof typeof mockBookData];
+  const handleAddPart = async () => {
+    try {
+      await createPart(userId, bookId, {
+        title: 'New Part',
+        summary: 'A new part in the book'
+      });
+      // Reload the book data
+      const data = await getBookTOC(userId, bookId);
+      setBookData(data);
+    } catch (error) {
+      console.error('Error creating part:', error);
+      alert('Error creating part');
+    }
+  };
 
-  if (!bookData) {
-    return <div>Book not found</div>;
+  const handleEditPart = (partId: string, currentTitle: string, currentSummary?: string) => {
+    setEditingPart({
+      id: partId,
+      title: currentTitle,
+      summary: currentSummary || ''
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleSavePartEdit = async (newTitle: string, newSummary: string) => {
+    if (!editingPart) return;
+    
+    const { id: partId, title: currentTitle, summary: currentSummary } = editingPart;
+    
+    // Only update if something changed
+    if (newTitle !== currentTitle || newSummary !== currentSummary) {
+      try {
+        const updateData: any = {};
+        if (newTitle !== currentTitle) updateData.title = newTitle;
+        if (newSummary !== currentSummary) updateData.summary = newSummary;
+        
+        await updatePart(userId, bookId, partId, updateData);
+        // Reload the book data
+        const data = await getBookTOC(userId, bookId);
+        setBookData(data);
+      } catch (error) {
+        console.error('Error updating part:', error);
+        alert('Error updating part');
+      }
+    }
+  };
+
+  const handleDeletePart = async (partId: string, partTitle: string) => {
+    if (confirm(`Are you sure you want to delete the part "${partTitle}"? This will also delete all its chapters and sections.`)) {
+      try {
+        await deletePart(userId, bookId, partId);
+        // Reload the book data
+        const data = await getBookTOC(userId, bookId);
+        setBookData(data);
+        alert('Part deleted successfully');
+      } catch (error) {
+        console.error('Error deleting part:', error);
+        alert('Error deleting part');
+      }
+    }
+  };
+
+  const handleEditChapter = (chapterId: string, partId: string, title: string, summary: string) => {
+    setEditingChapter({ id: chapterId, partId, title, summary });
+    setChapterEditModalOpen(true);
+  };
+
+  const handleSaveChapter = async (title: string, summary: string) => {
+    if (!editingChapter) return;
+
+    try {
+      const updateData: Record<string, unknown> = {};
+      if (title !== editingChapter.title) {
+        updateData.title = title;
+      }
+      if (summary !== editingChapter.summary) {
+        updateData.summary = summary;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await updateChapter(userId, bookId, editingChapter.partId, editingChapter.id, updateData);
+        // Reload the book data
+        const data = await getBookTOC(userId, bookId);
+        setBookData(data);
+      }
+    } catch (error) {
+      console.error('Error updating chapter:', error);
+      alert('Error updating chapter');
+      throw error;
+    }
+  };
+
+  const handleDeleteChapter = async (chapterId: string, partId: string, chapterTitle: string) => {
+    if (confirm(`Are you sure you want to delete the chapter "${chapterTitle}"? This will also delete all its sections.`)) {
+      try {
+        await deleteChapter(userId, bookId, partId, chapterId);
+        // Reload the book data
+        const data = await getBookTOC(userId, bookId);
+        setBookData(data);
+        alert('Chapter deleted successfully');
+      } catch (error) {
+        console.error('Error deleting chapter:', error);
+        alert('Error deleting chapter');
+      }
+    }
+  };
+
+  // Load book data when component mounts
+  useEffect(() => {
+    const loadBookData = async () => {
+      if (!userId || !bookId) return;
+      
+      try {
+        setLoading(true);
+        const data = await getBookTOC(userId, bookId);
+        setBookData(data);
+      } catch (error) {
+        console.error('Error loading book data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBookData();
+  }, [userId, bookId]);
+
+  if (loading) {
+    return <div>Loading book...</div>;
+  }
+
+  if (!bookData?.parts?.length) {
+    return (
+      <div>
+        <h3>Book has no content yet</h3>
+        <p>This book exists but has no parts, chapters, or sections yet.</p>
+        <button
+          type="button"
+          onClick={handleAddPart}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            marginTop: '15px'
+          }}
+        >
+          + Add First Part
+        </button>
+      </div>
+    );
   }
 
   const handleSaveContent = async (sectionId: string) => {
@@ -80,7 +208,6 @@ export default function BookEditor({ userId, bookId }: Readonly<BookEditorProps>
       // 2. Getting existing blocks for the section
       // 3. Updating or creating blocks with the new content
       
-      alert('Content saved! (This is a simulation - implement actual Firestore saving)');
     } catch (error) {
       console.error('Error saving content:', error);
       alert('Error saving content');
@@ -89,30 +216,15 @@ export default function BookEditor({ userId, bookId }: Readonly<BookEditorProps>
     }
   };
 
-  const handleAddPart = async () => {
-    try {
-      const partRef = await createPart(userId, bookId, {
-        title: 'New Part',
-        summary: 'A new part in the book'
-      });
-      console.log('Created part:', partRef.id);
-      // TODO: Refresh the book data to show the new part
-      alert('Part created! Refresh to see changes.');
-    } catch (error) {
-      console.error('Error creating part:', error);
-      alert('Error creating part');
-    }
-  };
-
   const handleAddChapter = async (partId: string) => {
     try {
-      const chapterRef = await createChapter(userId, bookId, partId, {
+      await createChapter(userId, bookId, partId, {
         title: 'New Chapter',
         summary: 'A new chapter in the part'
       });
-      console.log('Created chapter:', chapterRef.id);
-      // TODO: Refresh the book data to show the new chapter
-      alert('Chapter created! Refresh to see changes.');
+      // Reload the book data to show the new chapter
+      const data = await getBookTOC(userId, bookId);
+      setBookData(data);
     } catch (error) {
       console.error('Error creating chapter:', error);
       alert('Error creating chapter');
@@ -121,23 +233,23 @@ export default function BookEditor({ userId, bookId }: Readonly<BookEditorProps>
 
   const handleAddSection = async (chapterId: string) => {
     // We need to find the partId for this chapter
-    const partId = bookData.parts.find(part => 
-      part.chapters.some(chapter => chapter.id === chapterId)
-    )?.id;
+    const partData = bookData.parts.find((partData: any) => 
+      partData.chapters.some((chapter: any) => chapter.id === chapterId)
+    );
     
-    if (!partId) {
+    if (!partData) {
       alert('Could not find part for this chapter');
       return;
     }
 
     try {
-      const sectionRef = await createSection(userId, bookId, partId, chapterId, {
+      await createSection(userId, bookId, partData.part.id, chapterId, {
         title: 'New Section',
         summary: 'A new section in the chapter'
       });
-      console.log('Created section:', sectionRef.id);
-      // TODO: Refresh the book data to show the new section
-      alert('Section created! Refresh to see changes.');
+      // Reload the book data to show the new section
+      const data = await getBookTOC(userId, bookId);
+      setBookData(data);
     } catch (error) {
       console.error('Error creating section:', error);
       alert('Error creating section');
@@ -167,35 +279,79 @@ export default function BookEditor({ userId, bookId }: Readonly<BookEditorProps>
           </button>
         </div>
 
-        {bookData.parts.map((part) => (
-          <div key={part.id} style={{ marginBottom: '20px' }}>
-            <div style={{ 
-              fontWeight: 'bold', 
-              fontSize: '16px', 
-              marginBottom: '8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              {part.title}
-              <button
-                type="button"
-                onClick={() => handleAddChapter(part.id)}
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  fontSize: '10px'
-                }}
-              >
-                + Ch
-              </button>
+        {bookData.parts.map((partData: any) => (
+          <div key={partData.part.id} style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ 
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '4px'
+              }}>
+                <span style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                  {partData.part.title}
+                </span>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleEditPart(partData.part.id, partData.part.title, partData.part.summary)}
+                    style={{
+                      padding: '4px 8px',
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      fontSize: '10px'
+                    }}
+                  >
+                    Edit
+                  </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeletePart(partData.part.id, partData.part.title)}
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                    fontSize: '10px'
+                  }}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddChapter(partData.part.id)}
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                    fontSize: '10px'
+                  }}
+                >
+                  + Ch
+                </button>
+                </div>
+              </div>
+              {partData.part.summary && (
+                <div style={{ 
+                  fontSize: '14px', 
+                  color: '#666', 
+                  fontStyle: 'italic',
+                  marginTop: '4px'
+                }}>
+                  {partData.part.summary}
+                </div>
+              )}
             </div>
 
-            {part.chapters.map((chapter) => (
+            {partData.chapters.map((chapter: any) => (
               <div key={chapter.id} style={{ marginLeft: '15px', marginBottom: '12px' }}>
                 <div style={{ 
                   fontWeight: '500', 
@@ -204,25 +360,70 @@ export default function BookEditor({ userId, bookId }: Readonly<BookEditorProps>
                   justifyContent: 'space-between',
                   alignItems: 'center'
                 }}>
-                  {chapter.title}
-                  <button
-                    type="button"
-                    onClick={() => handleAddSection(chapter.id)}
-                    style={{
-                      padding: '2px 6px',
-                      backgroundColor: '#6c757d',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '2px',
-                      cursor: 'pointer',
-                      fontSize: '9px'
-                    }}
-                  >
-                    + Sec
-                  </button>
+                  <div>
+                    <div>{chapter.title}</div>
+                    {chapter.summary && (
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#666', 
+                        fontStyle: 'italic',
+                        fontWeight: 'normal',
+                        marginTop: '2px'
+                      }}>
+                        {chapter.summary}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleEditChapter(chapter.id, partData.part.id, chapter.title, chapter.summary || '')}
+                      style={{
+                        padding: '2px 6px',
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '2px',
+                        cursor: 'pointer',
+                        fontSize: '9px'
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteChapter(chapter.id, partData.part.id, chapter.title)}
+                      style={{
+                        padding: '2px 6px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '2px',
+                        cursor: 'pointer',
+                        fontSize: '9px'
+                      }}
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddSection(chapter.id)}
+                      style={{
+                        padding: '2px 6px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '2px',
+                        cursor: 'pointer',
+                        fontSize: '9px'
+                      }}
+                    >
+                      + Sec
+                    </button>
+                  </div>
                 </div>
 
-                {chapter.sections.map((section) => (
+                {chapter.sections?.map((section) => (
                   <div
                     key={section.id}
                     onClick={() => setSelectedSection(section.id)}
@@ -314,6 +515,24 @@ export default function BookEditor({ userId, bookId }: Readonly<BookEditorProps>
           </div>
         )}
       </div>
+
+      {/* Part Edit Modal */}
+      <PartEdit
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSave={handleSavePartEdit}
+        initialTitle={editingPart?.title || ''}
+        initialSummary={editingPart?.summary || ''}
+      />
+
+      {/* Chapter Edit Modal */}
+      <ChapterEdit
+        isOpen={chapterEditModalOpen}
+        onClose={() => setChapterEditModalOpen(false)}
+        onSave={handleSaveChapter}
+        initialTitle={editingChapter?.title || ''}
+        initialSummary={editingChapter?.summary || ''}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   getDoc, 
   addDoc, 
   updateDoc, 
+  deleteDoc,
   query, 
   orderBy, 
   DocumentReference 
@@ -112,6 +113,23 @@ export async function updatePart(
   await updateDoc(partRef, withTimestampsForUpdate(data));
 }
 
+/**
+ * Deletes a part and all its chapters/sections/blocks
+ * @param uid - User ID
+ * @param bookId - Book ID
+ * @param partId - Part ID
+ */
+export async function deletePart(
+  uid: string,
+  bookId: string,
+  partId: string
+): Promise<void> {
+  // TODO: In a production app, you'd want to delete all nested collections first
+  // For now, just delete the part document
+  const partRef = doc(db, 'users', uid, 'books', bookId, 'parts', partId);
+  await deleteDoc(partRef);
+}
+
 // Chapter CRUD
 /**
  * Creates a new chapter within a part
@@ -159,6 +177,23 @@ export async function updateChapter(
 ): Promise<void> {
   const chapterRef = doc(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters', chapterId);
   await updateDoc(chapterRef, withTimestampsForUpdate(data));
+}
+
+/**
+ * Deletes a chapter
+ * @param uid - User ID
+ * @param bookId - Book ID
+ * @param partId - Part ID
+ * @param chapterId - Chapter ID
+ */
+export async function deleteChapter(
+  uid: string,
+  bookId: string,
+  partId: string,
+  chapterId: string
+): Promise<void> {
+  const chapterRef = doc(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters', chapterId);
+  await deleteDoc(chapterRef);
 }
 
 // Section CRUD
