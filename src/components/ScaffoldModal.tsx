@@ -73,15 +73,15 @@ export default function ScaffoldModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl min-h-[90vh] lg:max-h-[90vh] flex flex-col my-4">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 lg:p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-lg lg:text-xl font-semibold text-gray-900">
               🏗️ Scaffold {childTypeLabelPlural}
             </h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-xs lg:text-sm text-gray-600 mt-1">
               Convert loose content into structured {childTypeLabelPlural.toLowerCase()} for "{parentTitle}"
             </p>
           </div>
@@ -95,10 +95,10 @@ export default function ScaffoldModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
+        <div className="flex-1 overflow-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 min-h-full">
             {/* Input Section */}
-            <div className="p-6 border-r border-gray-200 flex flex-col">
+            <div className="p-4 lg:p-6 lg:border-r border-gray-200 flex flex-col">
               <div className="mb-4">
                 <label htmlFor="scaffold-content" className="block text-sm font-medium text-gray-700 mb-2">
                   📝 Loose Content
@@ -116,7 +116,7 @@ export default function ScaffoldModal({
                   id="scaffold-content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-64 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full h-48 lg:h-64 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder={`Enter your loose content here...
 
 For example:
@@ -160,7 +160,7 @@ Wrap up and next steps...`}
             </div>
 
             {/* Preview Section */}
-            <div className="p-6 flex flex-col">
+            <div className="p-4 lg:p-6 flex flex-col border-t lg:border-t-0 border-gray-200">
               <div className="mb-4">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   👀 Preview {childTypeLabelPlural}
@@ -172,7 +172,7 @@ Wrap up and next steps...`}
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 min-h-48 overflow-y-auto">
                 {preview === null ? (
                   <div className="h-full flex items-center justify-center text-gray-400">
                     <div className="text-center">
