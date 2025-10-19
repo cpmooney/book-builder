@@ -23,6 +23,7 @@ import {
   updateBook,
   updatePart, 
   updateChapter,
+  updateSection,
   deletePart, 
   deleteChapter, 
   deleteSection,
@@ -110,6 +111,12 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
   const [moveEntityId, setMoveEntityId] = useState<string>('');
   const [moveEntityTitle, setMoveEntityTitle] = useState<string>('');
   const [availableParents, setAvailableParents] = useState<{ id: string; title: string; }[]>([]);
+  
+  // Child editing state
+  const [editChildModalOpen, setEditChildModalOpen] = useState(false);
+  const [editingChildId, setEditingChildId] = useState<string>('');
+  const [editingChildTitle, setEditingChildTitle] = useState<string>('');
+  const [editingChildSummary, setEditingChildSummary] = useState<string>('');
 
   const { level, entityId, parentIds } = config;
   const levelConfig = LEVEL_CONFIGS[level];
@@ -267,11 +274,88 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       await loadData();
       console.log('Data reloaded, closing modal');
       setCreateChildModalOpen(false);
-    } catch (error) {
+        } catch (error) {
       console.error('Error creating child:', error);
       alert(`Error creating ${levelConfig.childLabel.toLowerCase()}`);
     }
   };
+
+  // Handle saving child entity edits from modal
+  const handleSaveChildEdit = async (title: string, summary: string) => {
+    if (!user?.uid || !editingChildId) return;
+
+    try {
+      console.log('Updating child:', { level, childId: editingChildId, title, summary });
+      
+      const childData = { title, summary };
+
+      switch (level) {
+        case 'book':
+          // Editing a part
+          await updatePart(user.uid, entityId, editingChildId, childData);
+          break;
+        case 'part':
+          // Editing a chapter
+          if (!parentIds.bookId) return;
+          await updateChapter(user.uid, parentIds.bookId, entityId, editingChildId, childData);
+          break;
+        case 'chapter':
+          // Editing a section
+          if (!parentIds.bookId || !parentIds.partId) return;
+          await updateSection(user.uid, parentIds.bookId, parentIds.partId, entityId, editingChildId, childData);
+          break;
+        default:
+          console.log('Edit not implemented for', level);
+          return;
+      }
+
+      // Reload data after update
+      const loadData = async () => {
+        let data: unknown;
+        switch (level) {
+          case 'book':
+            data = await getBookTOC(user.uid, entityId);
+            setEntityData(data);
+            break;
+          case 'part':
+            data = await getPartTOC(user.uid, parentIds.bookId!, entityId);
+            setEntityData(data);
+            break;
+          case 'chapter': {
+            if (!parentIds.bookId || !parentIds.partId) {
+              throw new Error('Book ID and Part ID required for chapter');
+            }
+            const bookData = await getBookTOC(user.uid, parentIds.bookId);
+            const partData = bookData.parts?.find((p: { part: { id: string } }) => p.part.id === parentIds.partId);
+            const chapterData = partData?.chapters?.find((c: { id: string }) => c.id === entityId);
+            
+            if (!chapterData) throw new Error('Chapter not found');
+            
+            // Load sections for this chapter
+            const sections = await listSections(user.uid, parentIds.bookId, parentIds.partId, entityId);
+            
+            setEntityData({
+              chapter: chapterData,
+              sections: sections
+            });
+            break;
+          }
+        }
+      };
+      await loadData();
+      
+      // Close modal and reset state
+      setEditChildModalOpen(false);
+      setEditingChildId('');
+      setEditingChildTitle('');
+      setEditingChildSummary('');
+    } catch (error) {
+      console.error('Error updating child:', error);
+      alert(`Error updating ${levelConfig.childLabel.toLowerCase()}`);
+    }
+  };
+
+  // Handle saving current entity from modal
 
   // Generic edit current entity function
   const handleEditEntity = () => {
@@ -919,8 +1003,10 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
           breadcrumbs={breadcrumbs}
           loading={loading}
           onEdit={(id, title, summary) => {
-            // For children, we'll handle editing differently
-            alert(`${levelConfig.childLabel} editing not yet implemented`);
+            setEditingChildId(id);
+            setEditingChildTitle(title);
+            setEditingChildSummary(summary);
+            setEditChildModalOpen(true);
           }}
           onDelete={handleDeleteChild}
           onMove={handleMoveChild}
@@ -998,6 +1084,22 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         initialSummary=""
         entityType={levelConfig.childType}
         mode="create"
+        entityData={entityData}
+      />
+
+      <EntityEditModal
+        isOpen={editChildModalOpen}
+        onClose={() => {
+          setEditChildModalOpen(false);
+          setEditingChildId('');
+          setEditingChildTitle('');
+          setEditingChildSummary('');
+        }}
+        onSave={handleSaveChildEdit}
+        initialTitle={editingChildTitle}
+        initialSummary={editingChildSummary}
+        entityType={levelConfig.childType}
+        mode="edit"
         entityData={entityData}
       />
 
