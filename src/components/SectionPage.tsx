@@ -27,6 +27,7 @@ export default function SectionPage({
   const router = useRouter();
   const [section, setSection] = useState<Section | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isContentOnlyEditing, setIsContentOnlyEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editSummary, setEditSummary] = useState('');
   const [editContent, setEditContent] = useState('');
@@ -94,6 +95,33 @@ export default function SectionPage({
     }
   };
 
+  const handleContentOnlySave = async () => {
+    if (!user || !section) return;
+    
+    try {
+      setIsSaving(true);
+      
+      await updateSection(user.uid, bookId, partId, chapterId, sectionId, {
+        title: section.title, // Keep existing title
+        summary: section.summary, // Keep existing summary
+        content: editContent
+      });
+      
+      // Update local state
+      setSection({
+        ...section,
+        content: editContent
+      });
+      
+      setIsContentOnlyEditing(false);
+    } catch (error) {
+      console.error('Error saving content:', error);
+      alert('Error saving content');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCancel = () => {
     if (!section) return;
     
@@ -101,6 +129,20 @@ export default function SectionPage({
     setEditSummary(section.summary || '');
     setEditContent(section.content || '');
     setIsEditing(false);
+  };
+
+  const handleContentOnlyCancel = () => {
+    if (!section) return;
+    
+    setEditContent(section.content || '');
+    setIsContentOnlyEditing(false);
+  };
+
+  const handleContentClick = () => {
+    if (!isEditing) { // Only allow content-only editing when not in full edit mode
+      setEditContent(section?.content || '');
+      setIsContentOnlyEditing(true);
+    }
   };
 
   const goBack = () => {
@@ -182,8 +224,9 @@ export default function SectionPage({
           ← Back to Chapter
         </button>
         
-        {!isEditing ? (
+        {!isEditing && !isContentOnlyEditing ? (
           <button
+            type="button"
             onClick={() => setIsEditing(true)}
             style={{
               padding: '8px 16px',
@@ -197,6 +240,17 @@ export default function SectionPage({
           >
             ✏️ Edit Section
           </button>
+        ) : isContentOnlyEditing ? (
+          <div style={{ 
+            padding: '8px 16px',
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #007bff',
+            borderRadius: '4px',
+            fontSize: '14px',
+            color: '#007bff'
+          }}>
+            💬 Content editing mode (click content area for controls)
+          </div>
         ) : (
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
@@ -383,23 +437,143 @@ export default function SectionPage({
             </div>
           )}
 
-          {/* Content Display */}
-          <div style={{
-            backgroundColor: '#f8f9fa',
-            border: '1px solid #e0e0e0',
-            borderRadius: '4px',
-            padding: '20px',
-            minHeight: '300px'
-          }}>
+          {/* Content Display/Edit */}
+          {isContentOnlyEditing ? (
             <div style={{
-              whiteSpace: 'pre-wrap',
-              fontSize: '16px',
-              lineHeight: '1.6',
-              color: '#333'
+              backgroundColor: '#f8f9fa',
+              border: '2px solid #007bff',
+              borderRadius: '4px',
+              padding: '15px'
             }}>
-              {section.content || 'No content yet. Click "Edit Section" to add content.'}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '10px'
+              }}>
+                <h3 style={{ 
+                  margin: 0, 
+                  fontSize: '16px', 
+                  color: '#007bff' 
+                }}>
+                  Editing Content
+                </h3>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleContentOnlySave}
+                    disabled={isSaving}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: isSaving ? 'not-allowed' : 'pointer',
+                      fontSize: '12px',
+                      opacity: isSaving ? 0.7 : 1
+                    }}
+                  >
+                    {isSaving ? 'Saving...' : '✓ Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleContentOnlyCancel}
+                    disabled={isSaving}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={20}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  fontFamily: 'monospace',
+                  lineHeight: '1.5',
+                  resize: 'vertical'
+                }}
+                placeholder="Enter section content..."
+                autoFocus
+              />
             </div>
-          </div>
+          ) : (
+            <div 
+              onClick={handleContentClick}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleContentClick();
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label="Click to edit content"
+              style={{
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #e0e0e0',
+                borderRadius: '4px',
+                padding: '20px',
+                minHeight: '300px',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'border-color 0.2s ease',
+                outline: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#007bff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e0e0e0';
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#007bff';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 123, 255, 0.25)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#e0e0e0';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <div style={{
+                whiteSpace: 'pre-wrap',
+                fontSize: '16px',
+                lineHeight: '1.6',
+                color: '#333'
+              }}>
+                {section.content || 'No content yet. Click here to add content.'}
+              </div>
+              {/* Hover tooltip */}
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '15px',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                color: '#007bff',
+                padding: '4px 8px',
+                borderRadius: '3px',
+                fontSize: '12px',
+                pointerEvents: 'none'
+              }}>
+                💬 Click to edit content
+              </div>
+            </div>
+          )}
           
           {/* Section Info */}
           <div style={{ 
