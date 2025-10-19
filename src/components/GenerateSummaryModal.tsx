@@ -65,65 +65,32 @@ export default function GenerateSummaryModal({
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        padding: '24px',
-        maxWidth: '800px',
-        maxHeight: '80vh',
-        width: '90%',
-        display: 'flex',
-        flexDirection: 'column',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-      }}>
+    <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl min-h-[80vh] lg:max-h-[80vh] flex flex-col my-4">
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px',
-          paddingBottom: '12px',
-          borderBottom: '1px solid #e0e0e0'
-        }}>
-          <h2 style={{ 
-            margin: 0, 
-            fontSize: '20px', 
-            color: '#333',
-            fontWeight: 'bold'
-          }}>
-            Generate Summary for {entityType.charAt(0).toUpperCase() + entityType.slice(1)}
+        <div className="flex justify-between items-center p-4 lg:p-6 pb-3 lg:pb-4 border-b border-gray-200">
+                    <h2 className="text-lg lg:text-xl font-bold text-gray-800 m-0">
+            🤖 Generate AI Summary
           </h2>
           <button
             type="button"
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#666',
-              padding: '0',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
+            onClick={handleClose}
+            className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Close"
           >
-            ×
+            ❌
           </button>
+        </div>
+
+        {/* Entity Info */}
+        <div className="bg-gray-50 p-3 lg:p-4 rounded-lg mb-4 mx-4 lg:mx-6">
+          <div className="font-semibold text-sm text-gray-700 mb-1">
+            {entityType.charAt(0).toUpperCase() + entityType.slice(1)}: {entityTitle}
+          </div>
+          <div className="text-xs text-gray-500">
+            The following prompt will be sent to OpenAI:
+          </div>
+        </div>
         </div>
 
         {/* Entity Info */}
@@ -150,22 +117,9 @@ export default function GenerateSummaryModal({
         </div>
 
         {/* Content Preview */}
-        <div style={{
-          flex: 1,
-          minHeight: '200px',
-          maxHeight: '400px'
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '8px'
-          }}>
-            <div style={{
-              fontWeight: 'bold',
-              fontSize: '14px',
-              color: '#333'
-            }}>
+        <div className="flex-1 min-h-48 max-h-96 mx-4 lg:mx-6">
+          <div className="flex justify-between items-center mb-2">
+            <div className="font-semibold text-sm text-gray-800">
               Complete OpenAI Prompt:
             </div>
             <button
@@ -174,36 +128,13 @@ export default function GenerateSummaryModal({
                 navigator.clipboard.writeText(prompt);
                 alert('Prompt copied to clipboard!');
               }}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
+              className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
             >
               📋 Copy
             </button>
           </div>
           <div
-            style={{
-              width: '100%',
-              height: '100%',
-              padding: '12px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '13px',
-              fontFamily: 'monospace',
-              lineHeight: '1.4',
-              backgroundColor: '#f8f9fa',
-              color: '#495057',
-              overflow: 'auto',
-              whiteSpace: 'pre-wrap',
-              userSelect: 'text',
-              cursor: 'text'
-            }}
+            className="w-full h-48 p-3 border border-gray-300 rounded-lg text-sm font-mono leading-relaxed bg-gray-50 text-gray-700 overflow-auto whitespace-pre-wrap select-text cursor-text"
           >
             {prompt || 'No prompt available'}
           </div>
@@ -211,27 +142,11 @@ export default function GenerateSummaryModal({
 
         {/* Generated Content */}
         {generatedContent && (
-          <div style={{
-            marginTop: '20px',
-            padding: '16px',
-            backgroundColor: '#e7f3ff',
-            border: '1px solid #b3d9ff',
-            borderRadius: '4px'
-          }}>
-            <h4 style={{ 
-              margin: '0 0 12px 0', 
-              fontSize: '14px', 
-              color: '#0066cc',
-              fontWeight: 'bold'
-            }}>
+          <div className="mt-5 mx-4 lg:mx-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="m-0 mb-3 text-sm text-blue-600 font-bold">
               🤖 Generated Content:
             </h4>
-            <div style={{
-              fontSize: '14px',
-              lineHeight: '1.5',
-              color: '#333',
-              whiteSpace: 'pre-wrap'
-            }}>
+            <div className="text-sm leading-relaxed text-gray-800 whitespace-pre-wrap">
               {generatedContent}
             </div>
           </div>
@@ -239,68 +154,31 @@ export default function GenerateSummaryModal({
 
         {/* Error Display */}
         {error && (
-          <div style={{
-            marginTop: '20px',
-            padding: '16px',
-            backgroundColor: '#ffe6e6',
-            border: '1px solid #ff9999',
-            borderRadius: '4px'
-          }}>
-            <h4 style={{ 
-              margin: '0 0 8px 0', 
-              fontSize: '14px', 
-              color: '#cc0000',
-              fontWeight: 'bold'
-            }}>
+          <div className="mt-5 mx-4 lg:mx-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <h4 className="m-0 mb-2 text-sm text-red-600 font-bold">
               ❌ Error:
             </h4>
-            <div style={{
-              fontSize: '14px',
-              color: '#cc0000'
-            }}>
+            <div className="text-sm text-red-600">
               {error}
             </div>
           </div>
         )}
 
         {/* Actions */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '12px',
-          marginTop: '20px',
-          paddingTop: '12px',
-          borderTop: '1px solid #e0e0e0'
-        }}>
+        <div className="flex justify-end gap-3 mt-6 pt-4 mx-4 lg:mx-6 border-t border-gray-200">
           <button
             type="button"
             onClick={handleClose}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
+            className="px-4 lg:px-5 py-2 lg:py-2.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
           >
-            Close
+            Cancel
           </button>
           
           {generatedContent ? (
             <button
               type="button"
               onClick={handleUseGenerated}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              className="px-4 lg:px-5 py-2 lg:py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
             >
               ✅ Use This Content
             </button>
@@ -309,16 +187,11 @@ export default function GenerateSummaryModal({
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: isGenerating ? '#6c757d' : '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: isGenerating ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                opacity: isGenerating ? 0.7 : 1
-              }}
+              className={`px-4 lg:px-5 py-2 lg:py-2.5 text-white rounded-lg transition-colors text-sm ${
+                isGenerating 
+                  ? 'bg-gray-500 cursor-not-allowed opacity-70' 
+                  : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+              }`}
             >
               {isGenerating ? '⏳ Generating...' : '🤖 Generate with AI'}
             </button>
