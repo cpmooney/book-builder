@@ -5,9 +5,12 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value;
   
   // If user has token and tries to access sign-in, redirect to home
-  console.log('pathname:', request.nextUrl.pathname, 'token:', !!token);
-  if (token && request.nextUrl.pathname === '/sign-in') {
-    return NextResponse.redirect(new URL('/', request.url));
+  if (token)
+  {
+    if  (request.nextUrl.pathname === '/sign-in') {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    return NextResponse.next();
   }
   
   // Allow /sign-in to be public (for users without token)
