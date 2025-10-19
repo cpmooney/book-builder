@@ -827,7 +827,8 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       children = entityData.sections?.map((section: any) => ({
         id: section.id,
         title: section.title,
-        summary: section.summary  // Sections use summary for chapter view
+        summary: section.summary,  // Sections use summary for chapter view
+        content: section.content   // Add content for word count
       })) || [];
       break;
       

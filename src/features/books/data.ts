@@ -578,7 +578,14 @@ export async function listChapters(uid: string, bookId: string, partId: string):
 export async function listSections(uid: string, bookId: string, partId: string, chapterId: string): Promise<Section[]> {
   const sectionsRef = collection(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters', chapterId, 'sections');
   const snapshot = await getDocs(query(sectionsRef, orderBy('sortKey')));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Section));
+  
+  // Load content for each section
+  const sectionsWithContent = await Promise.all(
+    snapshot.docs.map(async (doc) => {
+      return { id: doc.id, ...doc.data() } as Section;
+    })
+  );
+  return sectionsWithContent;
 }
 
 /**

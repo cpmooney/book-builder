@@ -76,6 +76,7 @@ export interface EntityData {
 export interface ChildData extends EntityData {
   chapters?: unknown[];
   sections?: unknown[];
+  content?: string;
   [key: string]: unknown;
 }
 
@@ -206,13 +207,40 @@ function SortableChildItem({
       </div>
       {/* Child count and actions - stacked for mobile */}
       <div style={{ marginTop: '12px' }}>
-        <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
-          {config.childLabelPlural}: {childCount > 0 ? (
-            <span>{childCount}</span>
-          ) : (
-            <span style={{ color: '#999' }}>No {config.childLabelPlural.toLowerCase()} yet</span>
-          )}
-        </div>
+        {config.childType === 'section' ? (
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
+            Word Count: {(() => {
+              console.log(`🎯 EntityListView rendering section ${child.id}:`, {
+                title: child.title,
+                content: child.content,
+                contentType: typeof child.content,
+                contentLength: child.content?.length || 0,
+                summary: child.summary,
+                summaryLength: child.summary?.length || 0,
+                allKeys: Object.keys(child)
+              });
+              
+              const content = child.content || '';
+              const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+              
+              console.log(`   - Word count calculation:`, {
+                contentExists: !!content,
+                contentTrimmed: content.trim(),
+                wordCount
+              });
+              
+              return wordCount > 0 ? `${wordCount} words` : 'No content yet';
+            })()}
+          </div>
+        ) : (
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
+            {config.childLabelPlural}: {childCount > 0 ? (
+              <span>{childCount}</span>
+            ) : (
+              <span style={{ color: '#999' }}>No {config.childLabelPlural.toLowerCase()} yet</span>
+            )}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
             type="button"
