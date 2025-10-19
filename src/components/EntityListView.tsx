@@ -363,26 +363,6 @@ export default function EntityListView({
         
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
-          {config.showOverview && onShowOverview && (
-            <button
-              type="button"
-              onClick={onShowOverview}
-              style={{
-                padding: '10px 16px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                minHeight: '44px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              📖 {config.entityLabel} Overview
-            </button>
-          )}
           {extraActions}
         </div>
         
