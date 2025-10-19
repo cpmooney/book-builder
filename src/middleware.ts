@@ -7,6 +7,7 @@ export async function middleware(request: NextRequest) {
   // If user has token and tries to access sign-in, redirect to home
   if (token)
   {
+    console.log(request.nextUrl.pathname + ' ' + token);
     if  (request.nextUrl.pathname === '/sign-in') {
       return NextResponse.redirect(new URL('/', request.url));
     }

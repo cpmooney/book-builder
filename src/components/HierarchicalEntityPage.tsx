@@ -94,7 +94,7 @@ const LEVEL_CONFIGS: Record<string, {
 
 export default function HierarchicalEntityPage({ config }: Readonly<HierarchicalEntityPageProps>) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [entityData, setEntityData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -124,11 +124,12 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
   console.log('HierarchicalEntityPage - level:', level, 'levelConfig:', levelConfig);
 
   useEffect(() => {
-    if (!user) {
+    // Only redirect if auth loading is complete and there's no user
+    if (!authLoading && !user) {
       router.push('/sign-in');
       return;
     }
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     const loadData = async () => {

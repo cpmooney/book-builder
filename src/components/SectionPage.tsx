@@ -23,7 +23,7 @@ export default function SectionPage({
   chapterId, 
   sectionId 
 }: Readonly<SectionPageProps>) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [section, setSection] = useState<Section | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -57,13 +57,13 @@ export default function SectionPage({
       }
     };
 
-    if (!user) {
+    if (!authLoading && !user) {
       router.push('/sign-in');
       return;
     }
 
     loadSection();
-  }, [user, router, bookId, partId, chapterId, sectionId]);
+  }, [user, authLoading, router, bookId, partId, chapterId, sectionId]);
 
   const handleSave = async () => {
     if (!user || !section) return;
