@@ -69,7 +69,7 @@ export default function GenerateSummaryModal({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl min-h-[80vh] lg:max-h-[80vh] flex flex-col my-4">
         {/* Header */}
         <div className="flex justify-between items-center p-4 lg:p-6 pb-3 lg:pb-4 border-b border-gray-200">
-                    <h2 className="text-lg lg:text-xl font-bold text-gray-800 m-0">
+          <h2 className="text-lg lg:text-xl font-bold text-gray-800 m-0">
             🤖 Generate AI Summary
           </h2>
           <button
@@ -91,30 +91,6 @@ export default function GenerateSummaryModal({
             The following prompt will be sent to OpenAI:
           </div>
         </div>
-        </div>
-
-        {/* Entity Info */}
-        <div style={{
-          backgroundColor: '#f8f9fa',
-          padding: '12px',
-          borderRadius: '4px',
-          marginBottom: '16px'
-        }}>
-          <div style={{ 
-            fontWeight: 'bold', 
-            fontSize: '14px', 
-            color: '#495057',
-            marginBottom: '4px'
-          }}>
-            {entityType.charAt(0).toUpperCase() + entityType.slice(1)}: {entityTitle}
-          </div>
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#6c757d'
-          }}>
-            The following prompt will be sent to OpenAI:
-          </div>
-        </div>
 
         {/* Content Preview */}
         <div className="flex-1 min-h-48 max-h-96 mx-4 lg:mx-6">
@@ -133,9 +109,7 @@ export default function GenerateSummaryModal({
               📋 Copy
             </button>
           </div>
-          <div
-            className="w-full h-48 p-3 border border-gray-300 rounded-lg text-sm font-mono leading-relaxed bg-gray-50 text-gray-700 overflow-auto whitespace-pre-wrap select-text cursor-text"
-          >
+          <div className="w-full h-48 p-3 border border-gray-300 rounded-lg text-sm font-mono leading-relaxed bg-gray-50 text-gray-700 overflow-auto whitespace-pre-wrap select-text cursor-text">
             {prompt || 'No prompt available'}
           </div>
         </div>
@@ -187,11 +161,11 @@ export default function GenerateSummaryModal({
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating}
-              className={`px-4 lg:px-5 py-2 lg:py-2.5 text-white rounded-lg transition-colors text-sm ${
+              className={
                 isGenerating 
-                  ? 'bg-gray-500 cursor-not-allowed opacity-70' 
-                  : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
-              }`}
+                  ? 'px-4 lg:px-5 py-2 lg:py-2.5 text-white rounded-lg transition-colors text-sm bg-gray-500 cursor-not-allowed opacity-70'
+                  : 'px-4 lg:px-5 py-2 lg:py-2.5 text-white rounded-lg transition-colors text-sm bg-blue-600 hover:bg-blue-700 cursor-pointer'
+              }
             >
               {isGenerating ? '⏳ Generating...' : '🤖 Generate with AI'}
             </button>
