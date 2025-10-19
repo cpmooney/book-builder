@@ -147,33 +147,37 @@ function SortableChildItem({
       style={style}
       className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
         <div
           {...attributes}
           {...listeners}
           style={{
             cursor: 'grab',
-            padding: '8px',
+            padding: '6px',
             border: '2px dashed #ccc',
             borderRadius: '4px',
             backgroundColor: '#f9f9f9',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minWidth: '32px',
-            height: '32px'
+            minWidth: '24px',
+            height: '24px',
+            fontSize: '12px',
+            flexShrink: 0
           }}
         >
           ⋮⋮
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <Link 
             href={getChildPath(child)}
             style={{ 
               textDecoration: 'none', 
               color: '#007bff',
-              fontSize: '18px',
-              fontWeight: 'bold'
+              fontSize: '16px',
+              fontWeight: 'bold',
+              display: 'block',
+              wordBreak: 'break-word'
             }}
           >
             {config.numberStyle && (
@@ -188,22 +192,25 @@ function SortableChildItem({
               color: '#666', 
               fontSize: '14px', 
               marginTop: '8px',
-              fontStyle: 'italic'
+              fontStyle: 'italic',
+              margin: '8px 0 0 0',
+              wordBreak: 'break-word'
             }}>
               {child.summary}
             </p>
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-        <div style={{ fontSize: '14px', color: '#666' }}>
+      {/* Child count and actions - stacked for mobile */}
+      <div style={{ marginTop: '12px' }}>
+        <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
           {config.childLabelPlural}: {childCount > 0 ? (
             <span>{childCount}</span>
           ) : (
             <span style={{ color: '#999' }}>No {config.childLabelPlural.toLowerCase()} yet</span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={(e) => {
@@ -211,13 +218,16 @@ function SortableChildItem({
               onEdit(child.id, child.title, child.summary || '');
             }}
             style={{
-              padding: '6px 12px',
+              padding: '8px 16px',
               backgroundColor: '#6c757d',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
               cursor: 'pointer',
-              fontSize: '12px'
+              fontSize: '14px',
+              minHeight: '40px',
+              display: 'flex',
+              alignItems: 'center'
             }}
           >
             Edit
@@ -229,13 +239,16 @@ function SortableChildItem({
               onDelete(child.id, child.title);
             }}
             style={{
-              padding: '6px 12px',
+              padding: '8px 16px',
               backgroundColor: '#dc3545',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
               cursor: 'pointer',
-              fontSize: '12px'
+              fontSize: '14px',
+              minHeight: '40px',
+              display: 'flex',
+              alignItems: 'center'
             }}
           >
             Delete
@@ -305,20 +318,31 @@ export default function EntityListView({
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '16px', maxWidth: '100%', margin: '0 auto' }}>
       {/* Breadcrumbs */}
-      <nav style={{ marginBottom: '20px', fontSize: '14px' }}>
+      <nav style={{ 
+        marginBottom: '16px', 
+        fontSize: '14px',
+        padding: '8px 0',
+        overflowX: 'auto',
+        whiteSpace: 'nowrap'
+      }}>
         {breadcrumbs.map((crumb, index) => (
-          <span key={`${crumb.label}-${index}`}>
+          <span key={`${crumb.label}-${index}`} style={{ display: 'inline-block' }}>
             {crumb.href ? (
-              <Link href={crumb.href} style={{ color: '#007bff', textDecoration: 'none' }}>
+              <Link href={crumb.href} style={{ 
+                color: '#007bff', 
+                textDecoration: 'none',
+                padding: '4px 0',
+                display: 'inline-block'
+              }}>
                 {crumb.label}
               </Link>
             ) : (
-              <span style={{ color: '#666' }}>{crumb.label}</span>
+              <span style={{ color: '#666', padding: '4px 0', display: 'inline-block' }}>{crumb.label}</span>
             )}
             {index < breadcrumbs.length - 1 && (
-              <span style={{ margin: '0 8px', color: '#999' }}>→</span>
+              <span style={{ margin: '0 6px', color: '#999' }}>→</span>
             )}
           </span>
         ))}
@@ -326,30 +350,40 @@ export default function EntityListView({
 
       {/* Entity Header */}
       <div style={{ marginBottom: '30px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold' }}>
-            {config.entityLabel}: {entityData.title}
-          </h1>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            {config.showOverview && onShowOverview && (
-              <button
-                type="button"
-                onClick={onShowOverview}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                📖 {config.entityLabel} Overview
-              </button>
-            )}
-            {extraActions}
-          </div>
+        {/* Title */}
+        <h1 style={{ 
+          margin: '0 0 16px 0', 
+          fontSize: '24px', 
+          fontWeight: 'bold',
+          lineHeight: '1.2',
+          wordBreak: 'break-word'
+        }}>
+          {config.entityLabel}: {entityData.title}
+        </h1>
+        
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+          {config.showOverview && onShowOverview && (
+            <button
+              type="button"
+              onClick={onShowOverview}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              📖 {config.entityLabel} Overview
+            </button>
+          )}
+          {extraActions}
         </div>
         
         {entityData.summary && (
@@ -368,13 +402,14 @@ export default function EntityListView({
           type="button"
           onClick={onCreate}
           style={{
-            padding: '10px 20px',
+            width: '100%',
+            padding: '12px 20px',
             backgroundColor: '#007bff',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
-            fontSize: '14px',
+            fontSize: '16px',
             fontWeight: 'bold'
           }}
         >
