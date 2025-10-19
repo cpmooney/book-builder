@@ -136,73 +136,74 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
     }
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user?.uid) return;
-      
-      try {
-        setLoading(true);
-        let data: any;
+  // Extracted loadData function to be reusable
+  const loadData = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      setLoading(true);
+      let data: any;
 
-        switch (level) {
-          case 'book':
-            data = await getBookTOC(user.uid, entityId);
-            setEntityData(data);
-            break;
-            
-          case 'part':
-            if (!parentIds.bookId) throw new Error('Book ID required for part');
-            data = await getPartTOC(user.uid, parentIds.bookId, entityId);
-            setEntityData(data);
-            break;
-            
-          case 'chapter': {
-            if (!parentIds.bookId || !parentIds.partId) {
-              throw new Error('Book ID and Part ID required for chapter');
-            }
-            // Get chapter data from book TOC
-            const bookData = await getBookTOC(user.uid, parentIds.bookId);
-            const partData = bookData.parts?.find((p: { part: { id: string } }) => p.part.id === parentIds.partId);
-            const chapterData = partData?.chapters?.find((c: { id: string }) => c.id === entityId);
-            
-            if (!chapterData) throw new Error('Chapter not found');
-            
-            // Load sections for this chapter
-            const sections = await listSections(user.uid, parentIds.bookId, parentIds.partId, entityId);
-            
-            setEntityData({
-              chapter: chapterData,
-              sections: sections
-            });
-            break;
+      switch (level) {
+        case 'book':
+          data = await getBookTOC(user.uid, entityId);
+          setEntityData(data);
+          break;
+          
+        case 'part':
+          if (!parentIds.bookId) throw new Error('Book ID required for part');
+          data = await getPartTOC(user.uid, parentIds.bookId, entityId);
+          setEntityData(data);
+          break;
+          
+        case 'chapter': {
+          if (!parentIds.bookId || !parentIds.partId) {
+            throw new Error('Book ID and Part ID required for chapter');
           }
-
-          case 'section': {
-            if (!parentIds.bookId || !parentIds.partId || !parentIds.chapterId) {
-              throw new Error('Book ID, Part ID, and Chapter ID required for section');
-            }
-            // Use getSectionContent to get the section data
-            const sectionData = await getSectionContent(user.uid, parentIds.bookId, parentIds.partId, parentIds.chapterId, entityId);
-            
-            if (!sectionData) throw new Error('Section not found');
-            
-            setEntityData({
-              section: sectionData,
-              // Sections don't have children in our current structure
-            });
-            break;
-          }
-            
-          default:
-            throw new Error(`Unsupported level: ${level}`);
+          // Get chapter data from book TOC
+          const bookData = await getBookTOC(user.uid, parentIds.bookId);
+          const partData = bookData.parts?.find((p: { part: { id: string } }) => p.part.id === parentIds.partId);
+          const chapterData = partData?.chapters?.find((c: { id: string }) => c.id === entityId);
+          
+          if (!chapterData) throw new Error('Chapter not found');
+          
+          // Load sections for this chapter
+          const sections = await listSections(user.uid, parentIds.bookId, parentIds.partId, entityId);
+          
+          setEntityData({
+            chapter: chapterData,
+            sections: sections
+          });
+          break;
         }
-      } catch (error) {
-        console.error('Error loading data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
+        case 'section': {
+          if (!parentIds.bookId || !parentIds.partId || !parentIds.chapterId) {
+            throw new Error('Book ID, Part ID, and Chapter ID required for section');
+          }
+          // Use getSectionContent to get the section data
+          const sectionData = await getSectionContent(user.uid, parentIds.bookId, parentIds.partId, parentIds.chapterId, entityId);
+          
+          if (!sectionData) throw new Error('Section not found');
+          
+          setEntityData({
+            section: sectionData,
+            // Sections don't have children in our current structure
+          });
+          break;
+        }
+          
+        default:
+          throw new Error(`Unsupported level: ${level}`);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadData();
   }, [user?.uid, level, entityId, parentIds]);
 
@@ -248,7 +249,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       }
 
       // Reload the data to show new children
-      globalThis.location.reload(); // Simple reload for now
+      await loadData(); // Use the existing loadData function
       setScaffoldModalOpen(false);
     } catch (error) {
       console.error('Error creating scaffolded children:', error);

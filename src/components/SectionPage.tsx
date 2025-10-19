@@ -35,9 +35,31 @@ export default function SectionPage({
   const [isSaving, setIsSaving] = useState(false);
   const [showGenerateSummaryModal, setShowGenerateSummaryModal] = useState(false);
 
-  const handleSummaryGenerated = (content: string) => {
+  const handleSummaryGenerated = async (content: string) => {
     setEditSummary(content);
     setShowGenerateSummaryModal(false);
+    
+    // Auto-save the generated summary
+    if (user && section) {
+      try {
+        await updateSection(user.uid, bookId, partId, chapterId, sectionId, {
+          title: section.title,
+          summary: content, // Use the generated content
+          content: section.content
+        });
+        
+        // Update local state
+        setSection({
+          ...section,
+          summary: content
+        });
+        
+        console.log('✅ Auto-saved generated summary');
+      } catch (error) {
+        console.error('Error auto-saving generated summary:', error);
+        // Don't show alert for auto-save errors, just log them
+      }
+    }
   };
 
   useEffect(() => {
