@@ -6,7 +6,7 @@ interface EntityOverviewProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly entityData: any;
-  readonly entityType: 'book' | 'part' | 'chapter';
+  readonly entityType: 'book' | 'part' | 'chapter' | 'section';
   readonly childrenData: any[];
 }
 
@@ -63,6 +63,14 @@ export default function EntityOverview({
           childLabel: 'Sections',
           grandChildLabel: 'Blocks'
         };
+      case 'section':
+        return {
+          title: entityData?.section?.title || entityData?.title || 'Untitled Section',
+          summary: entityData?.section?.summary || entityData?.summary || '',
+          status: entityData?.section?.status || entityData?.status || 'Unknown',
+          childLabel: 'Blocks',
+          grandChildLabel: 'Content'
+        };
       default:
         return {
           title: 'Unknown Entity',
@@ -86,27 +94,9 @@ export default function EntityOverview({
       text += `${entityInfo.summary}\n\n`;
     }
     
-    text += `Status: ${entityInfo.status}\n`;
-    text += `${entityInfo.childLabel}: ${childrenData?.length || 0}\n`;
-    
-    // Calculate total grandchildren
-    let totalGrandChildren = 0;
-    if (entityType === 'book') {
-      totalGrandChildren = childrenData?.reduce((total: number, child: any) =>
-        total + (child.chapters?.length || 0), 0) || 0;
-    } else if (entityType === 'part') {
-      totalGrandChildren = childrenData?.reduce((total: number, child: any) =>
-        total + (child.sections?.length || 0), 0) || 0;
-    }
-    
-    if (totalGrandChildren > 0) {
-      text += `Total ${entityInfo.grandChildLabel}: ${totalGrandChildren}\n`;
-    }
-    text += '\n';
-    
     if (childrenData && childrenData.length > 0) {
-      text += `${entityInfo.childLabel.toUpperCase()} OVERVIEW\n`;
-      text += '-'.repeat(`${entityInfo.childLabel} OVERVIEW`.length) + '\n\n';
+      text += `${entityInfo.childLabel.toUpperCase()}\n`;
+      text += '-'.repeat(entityInfo.childLabel.length) + '\n\n';
       
       for (const [index, child] of childrenData.entries()) {
         const childNumber = entityType === 'book' ? toRoman(index + 1) : (index + 1).toString();
@@ -116,18 +106,6 @@ export default function EntityOverview({
         text += `${childNumber}. ${childTitle}\n`;
         if (childSummary) {
           text += `   ${childSummary}\n`;
-        }
-        
-        // Add grandchildren count
-        let grandChildrenCount = 0;
-        if (entityType === 'book' && child.chapters) {
-          grandChildrenCount = child.chapters.length;
-        } else if (entityType === 'part' && child.sections) {
-          grandChildrenCount = child.sections.length;
-        }
-        
-        if (grandChildrenCount > 0) {
-          text += `   ${entityInfo.grandChildLabel}: ${grandChildrenCount}\n`;
         }
         text += '\n';
       }
@@ -187,6 +165,7 @@ export default function EntityOverview({
             {entityInfo.title} - Overview
           </h2>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -226,84 +205,6 @@ export default function EntityOverview({
           </div>
         )}
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-          marginBottom: '24px'
-        }}>
-          <div style={{
-            padding: '16px',
-            backgroundColor: '#e3f2fd',
-            borderRadius: '6px',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: '#1976d2'
-            }}>
-              {childrenData?.length || 0}
-            </div>
-            <div style={{
-              fontSize: '14px',
-              color: '#666',
-              marginTop: '4px'
-            }}>
-              {entityInfo.childLabel}
-            </div>
-          </div>
-
-          {entityType !== 'chapter' && (
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f3e5f5',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: '#7b1fa2'
-              }}>
-                {entityType === 'book' 
-                  ? childrenData?.reduce((total: number, child: any) => total + (child.chapters?.length || 0), 0) || 0
-                  : childrenData?.reduce((total: number, child: any) => total + (child.sections?.length || 0), 0) || 0
-                }
-              </div>
-              <div style={{
-                fontSize: '14px',
-                color: '#666',
-                marginTop: '4px'
-              }}>
-                Total {entityInfo.grandChildLabel}
-              </div>
-            </div>
-          )}
-
-          <div style={{
-            padding: '16px',
-            backgroundColor: '#e8f5e8',
-            borderRadius: '6px',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#2e7d32'
-            }}>
-              {entityInfo.status}
-            </div>
-            <div style={{
-              fontSize: '14px',
-              color: '#666',
-              marginTop: '4px'
-            }}>
-              Status
-            </div>
-          </div>
-        </div>
-
         {childrenData && childrenData.length > 0 && (
           <div>
             <h3 style={{
@@ -325,13 +226,6 @@ export default function EntityOverview({
                 const childNumber = entityType === 'book' ? toRoman(index + 1) : (index + 1).toString();
                 const childTitle = child.title || `Untitled ${entityInfo.childLabel.slice(0, -1)}`;
                 const childSummary = child.summary || '';
-                
-                let grandChildrenCount = 0;
-                if (entityType === 'book' && child.chapters) {
-                  grandChildrenCount = child.chapters.length;
-                } else if (entityType === 'part' && child.sections) {
-                  grandChildrenCount = child.sections.length;
-                }
 
                 return (
                   <div
@@ -341,33 +235,14 @@ export default function EntityOverview({
                       borderBottom: index < childrenData.length - 1 ? '1px solid #e0e0e0' : 'none'
                     }}
                   >
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: childSummary ? '8px' : '0'
+                    <h4 style={{
+                      margin: '0 0 8px 0',
+                      color: '#333',
+                      fontSize: '16px',
+                      fontWeight: '500'
                     }}>
-                      <h4 style={{
-                        margin: 0,
-                        color: '#333',
-                        fontSize: '16px',
-                        fontWeight: '500'
-                      }}>
-                        {childNumber}. {childTitle}
-                      </h4>
-                      {grandChildrenCount > 0 && (
-                        <span style={{
-                          backgroundColor: '#f0f0f0',
-                          color: '#666',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}>
-                          {grandChildrenCount} {entityInfo.grandChildLabel.toLowerCase()}
-                        </span>
-                      )}
-                    </div>
+                      {childNumber}. {childTitle}
+                    </h4>
                     {childSummary && (
                       <p style={{
                         margin: 0,
@@ -392,6 +267,7 @@ export default function EntityOverview({
           justifyContent: 'flex-end'
         }}>
           <button
+            type="button"
             onClick={copyToClipboard}
             style={{
               padding: '10px 20px',
@@ -407,6 +283,7 @@ export default function EntityOverview({
             {copySuccess ? '✓ Copied!' : '📋 Copy Overview'}
           </button>
           <button
+            type="button"
             onClick={onClose}
             style={{
               padding: '10px 20px',

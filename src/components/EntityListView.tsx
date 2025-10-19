@@ -36,6 +36,32 @@ function toRoman(num: number): string {
   return result;
 }
 
+// Helper function to convert number to alphabetic (A, B, C, ...)
+function toAlpha(num: number): string {
+  let result = '';
+  while (num > 0) {
+    num--;
+    result = String.fromCharCode(65 + (num % 26)) + result;
+    num = Math.floor(num / 26);
+  }
+  return result;
+}
+
+// Helper function to format numbers based on style
+function formatNumber(num: number, style: 'roman' | 'numeric' | 'alpha' | 'bullet' = 'numeric'): string {
+  switch (style) {
+    case 'roman':
+      return toRoman(num);
+    case 'alpha':
+      return toAlpha(num);
+    case 'bullet':
+      return '•';
+    case 'numeric':
+    default:
+      return num.toString();
+  }
+}
+
 export interface BreadcrumbItem {
   label: string;
   href?: string;
@@ -54,12 +80,12 @@ export interface ChildData extends EntityData {
 }
 
 export interface EntityListViewConfig {
-  entityType: 'book' | 'part' | 'chapter';
+  entityType: 'book' | 'part' | 'chapter' | 'section';
   childType: 'part' | 'chapter' | 'section';
   entityLabel: string;
   childLabel: string;
   childLabelPlural: string;
-  showRomanNumerals?: boolean;
+  numberStyle?: 'roman' | 'numeric' | 'alpha' | 'bullet';
   showOverview?: boolean;
 }
 
@@ -150,9 +176,9 @@ function SortableChildItem({
               fontWeight: 'bold'
             }}
           >
-            {config.showRomanNumerals && (
+            {config.numberStyle && (
               <span style={{ color: '#666', marginRight: '8px' }}>
-                {toRoman(childNumber)}.
+                {formatNumber(childNumber, config.numberStyle)}.
               </span>
             )}
             {child.title}

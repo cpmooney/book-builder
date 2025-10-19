@@ -15,6 +15,8 @@ import EntityListView, {
 import { 
   getBookTOC, 
   getPartTOC,
+  getSectionContent,
+  listSections,
   createPart, 
   createChapter, 
   createSection,
@@ -34,12 +36,13 @@ import EntityEditModal from './EntityEditModal';
 import EntityOverview from './EntityOverview';
 
 export interface HierarchicalEntityConfig {
-  level: 'book' | 'part' | 'chapter';
+  level: 'book' | 'part' | 'chapter' | 'section';
   entityId: string;
   parentIds: {
     bookId?: string;
     partId?: string;
     chapterId?: string;
+    sectionId?: string;
   };
 }
 
@@ -52,28 +55,28 @@ const LEVEL_CONFIGS: Record<string, {
   entityLabel: string;
   childLabel: string;
   childLabelPlural: string;
-  showRomanNumerals: boolean;
+  numberStyle: 'roman' | 'numeric' | 'alpha' | 'bullet';
   childType: 'part' | 'chapter' | 'section';
 }> = {
   book: {
     entityLabel: 'Book',
     childLabel: 'Part',
     childLabelPlural: 'Parts',
-    showRomanNumerals: true,
+    numberStyle: 'roman', // Parts use Roman numerals (I, II, III)
     childType: 'part'
   },
   part: {
     entityLabel: 'Part',
     childLabel: 'Chapter',
     childLabelPlural: 'Chapters',
-    showRomanNumerals: false,
+    numberStyle: 'numeric', // Chapters use numbers (1, 2, 3)
     childType: 'chapter'
   },
   chapter: {
     entityLabel: 'Chapter',
     childLabel: 'Section',
     childLabelPlural: 'Sections',
-    showRomanNumerals: false,
+    numberStyle: 'alpha', // Sections use letters (A, B, C)
     childType: 'section'
   }
 };
@@ -89,6 +92,8 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
 
   const { level, entityId, parentIds } = config;
   const levelConfig = LEVEL_CONFIGS[level];
+
+  console.log('HierarchicalEntityPage - level:', level, 'levelConfig:', levelConfig);
 
   useEffect(() => {
     if (!user) {
@@ -121,17 +126,35 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
             if (!parentIds.bookId || !parentIds.partId) {
               throw new Error('Book ID and Part ID required for chapter');
             }
-            // For now, we'll use getBookTOC and find the chapter
-            // In Phase 2, we could create getChapterTOC
+            // Get chapter data from book TOC
             const bookData = await getBookTOC(user.uid, parentIds.bookId);
             const partData = bookData.parts?.find((p: { part: { id: string } }) => p.part.id === parentIds.partId);
             const chapterData = partData?.chapters?.find((c: { id: string }) => c.id === entityId);
             
             if (!chapterData) throw new Error('Chapter not found');
             
+            // Load sections for this chapter
+            const sections = await listSections(user.uid, parentIds.bookId, parentIds.partId, entityId);
+            
             setEntityData({
               chapter: chapterData,
-              sections: [] // Will be loaded when sections are implemented
+              sections: sections
+            });
+            break;
+          }
+
+          case 'section': {
+            if (!parentIds.bookId || !parentIds.partId || !parentIds.chapterId) {
+              throw new Error('Book ID, Part ID, and Chapter ID required for section');
+            }
+            // Use getSectionContent to get the section data
+            const sectionData = await getSectionContent(user.uid, parentIds.bookId, parentIds.partId, parentIds.chapterId, entityId);
+            
+            if (!sectionData) throw new Error('Section not found');
+            
+            setEntityData({
+              section: sectionData,
+              // Sections don't have children in our current structure
             });
             break;
           }
@@ -151,6 +174,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
 
   // Generic create child function
   const handleCreateChild = async () => {
+    console.log('handleCreateChild called for level:', level);
     setCreateChildModalOpen(true);
   };
 
@@ -159,18 +183,22 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
     if (!user?.uid) return;
 
     try {
+      console.log('Creating child:', { level, title, summary, parentIds });
       const childData = { title, summary };
 
       switch (level) {
         case 'book':
+          console.log('Creating part for book:', entityId);
           await createPart(user.uid, entityId, childData);
           break;
         case 'part':
           if (!parentIds.bookId) return;
+          console.log('Creating chapter for part:', entityId, 'in book:', parentIds.bookId);
           await createChapter(user.uid, parentIds.bookId, entityId, childData);
           break;
         case 'chapter':
           if (!parentIds.bookId || !parentIds.partId) return;
+          console.log('Creating section for chapter:', entityId, 'in part:', parentIds.partId, 'in book:', parentIds.bookId);
           await createSection(user.uid, parentIds.bookId, parentIds.partId, entityId, childData);
           break;
         default:
@@ -179,6 +207,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       }
 
       // Reload data
+      console.log('Reloading data after creation...');
       const loadData = async () => {
         let data: unknown;
         switch (level) {
@@ -190,10 +219,30 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
             data = await getPartTOC(user.uid, parentIds.bookId!, entityId);
             setEntityData(data);
             break;
-          // Add chapter case when needed
+          case 'chapter': {
+            if (!parentIds.bookId || !parentIds.partId) {
+              throw new Error('Book ID and Part ID required for chapter');
+            }
+            const bookData = await getBookTOC(user.uid, parentIds.bookId);
+            const partData = bookData.parts?.find((p: { part: { id: string } }) => p.part.id === parentIds.partId);
+            const chapterData = partData?.chapters?.find((c: { id: string }) => c.id === entityId);
+            
+            if (!chapterData) throw new Error('Chapter not found');
+            
+            // Load sections for this chapter
+            const sections = await listSections(user.uid, parentIds.bookId, parentIds.partId, entityId);
+            console.log('Loaded sections:', sections);
+            
+            setEntityData({
+              chapter: chapterData,
+              sections: sections
+            });
+            break;
+          }
         }
       };
       await loadData();
+      console.log('Data reloaded, closing modal');
       setCreateChildModalOpen(false);
     } catch (error) {
       console.error('Error creating child:', error);
@@ -291,7 +340,25 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
             data = await getPartTOC(user.uid, parentIds.bookId!, entityId);
             setEntityData(data);
             break;
-          // Add chapter case when needed
+          case 'chapter': {
+            if (!parentIds.bookId || !parentIds.partId) {
+              throw new Error('Book ID and Part ID required for chapter');
+            }
+            const bookData = await getBookTOC(user.uid, parentIds.bookId);
+            const partData = bookData.parts?.find((p: { part: { id: string } }) => p.part.id === parentIds.partId);
+            const chapterData = partData?.chapters?.find((c: { id: string }) => c.id === entityId);
+            
+            if (!chapterData) throw new Error('Chapter not found');
+            
+            // Load sections for this chapter
+            const sections = await listSections(user.uid, parentIds.bookId, parentIds.partId, entityId);
+            
+            setEntityData({
+              chapter: chapterData,
+              sections: sections
+            });
+            break;
+          }
         }
       };
       await loadData();
@@ -389,7 +456,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         entityLabel: levelConfig.entityLabel,
         childLabel: levelConfig.childLabel,
         childLabelPlural: levelConfig.childLabelPlural,
-        showRomanNumerals: levelConfig.showRomanNumerals,
+        numberStyle: levelConfig.numberStyle,
         showOverview: true
       }}
       breadcrumbs={[]}
@@ -506,7 +573,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
     entityLabel: levelConfig.entityLabel,
     childLabel: levelConfig.childLabel,
     childLabelPlural: levelConfig.childLabelPlural,
-    showRomanNumerals: levelConfig.showRomanNumerals,
+    numberStyle: levelConfig.numberStyle,
     showOverview: true
   };
 
@@ -531,24 +598,70 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
 
   return (
     <>
-      <EntityListView
-        entityData={entityForView}
-        items={children}
-        config={entityConfig}
-        breadcrumbs={breadcrumbs}
-        loading={loading}
-        onEdit={(id, title, summary) => {
-          // For children, we'll handle editing differently
-          alert(`${levelConfig.childLabel} editing not yet implemented`);
-        }}
-        onDelete={handleDeleteChild}
-        onCreate={handleCreateChild}
-        onReorder={handleReorderChildren}
-        onShowOverview={() => setOverviewModalOpen(true)}
-        getChildPath={getChildPath}
-        getChildCount={getChildCount}
-        extraActions={editButton}
-      />
+      {level === 'section' ? (
+        // Special view for sections - they don't have children
+        <div style={{ padding: '20px' }}>
+          <h1>{entityData?.section?.title || 'Untitled Section'}</h1>
+          <p>{entityData?.section?.summary || 'No summary available'}</p>
+          <div style={{ marginTop: '20px' }}>
+            <button
+              type="button"
+              onClick={handleEditEntity}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                marginRight: '10px'
+              }}
+            >
+              ✏️ Edit Section
+            </button>
+            <button
+              type="button"
+              onClick={() => setOverviewModalOpen(true)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              📄 Section Overview
+            </button>
+          </div>
+          <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+            <h3>Section Content</h3>
+            <p>Content editing interface will be implemented here.</p>
+          </div>
+        </div>
+      ) : (
+        <EntityListView
+          entityData={entityForView}
+          items={children}
+          config={entityConfig}
+          breadcrumbs={breadcrumbs}
+          loading={loading}
+          onEdit={(id, title, summary) => {
+            // For children, we'll handle editing differently
+            alert(`${levelConfig.childLabel} editing not yet implemented`);
+          }}
+          onDelete={handleDeleteChild}
+          onCreate={handleCreateChild}
+          onReorder={handleReorderChildren}
+          onShowOverview={() => setOverviewModalOpen(true)}
+          getChildPath={getChildPath}
+          getChildCount={getChildCount}
+          extraActions={editButton}
+        />
+      )}
+      
 
       <EntityEditModal
         isOpen={editModalOpen}
