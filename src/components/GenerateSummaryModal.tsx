@@ -1,11 +1,15 @@
 'use client';
 
+import { useState } from 'react';
+import { generateWithAI } from '../lib/ai';
+
 interface GenerateSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   prompt: string;
   entityType: 'book' | 'part' | 'chapter' | 'section';
   entityTitle: string;
+  onGenerated?: (content: string) => void;
 }
 
 export default function GenerateSummaryModal({
@@ -13,8 +17,51 @@ export default function GenerateSummaryModal({
   onClose,
   prompt,
   entityType,
-  entityTitle
+  entityTitle,
+  onGenerated
 }: Readonly<GenerateSummaryModalProps>) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<string>('');
+  const [error, setError] = useState<string>('');
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setError('');
+    setGeneratedContent('');
+
+    try {
+      const result = await generateWithAI({
+        prompt,
+        entityType,
+        entityTitle
+      });
+
+      if (result.success && result.content) {
+        setGeneratedContent(result.content);
+      } else {
+        setError(result.error || 'Failed to generate content');
+      }
+    } catch (error) {
+      console.error('Error generating content:', error);
+      setError('An unexpected error occurred');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleUseGenerated = () => {
+    if (generatedContent && onGenerated) {
+      onGenerated(generatedContent);
+    }
+    onClose();
+  };
+
+  const handleClose = () => {
+    setGeneratedContent('');
+    setError('');
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -162,6 +209,60 @@ export default function GenerateSummaryModal({
           </div>
         </div>
 
+        {/* Generated Content */}
+        {generatedContent && (
+          <div style={{
+            marginTop: '20px',
+            padding: '16px',
+            backgroundColor: '#e7f3ff',
+            border: '1px solid #b3d9ff',
+            borderRadius: '4px'
+          }}>
+            <h4 style={{ 
+              margin: '0 0 12px 0', 
+              fontSize: '14px', 
+              color: '#0066cc',
+              fontWeight: 'bold'
+            }}>
+              🤖 Generated Content:
+            </h4>
+            <div style={{
+              fontSize: '14px',
+              lineHeight: '1.5',
+              color: '#333',
+              whiteSpace: 'pre-wrap'
+            }}>
+              {generatedContent}
+            </div>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <div style={{
+            marginTop: '20px',
+            padding: '16px',
+            backgroundColor: '#ffe6e6',
+            border: '1px solid #ff9999',
+            borderRadius: '4px'
+          }}>
+            <h4 style={{ 
+              margin: '0 0 8px 0', 
+              fontSize: '14px', 
+              color: '#cc0000',
+              fontWeight: 'bold'
+            }}>
+              ❌ Error:
+            </h4>
+            <div style={{
+              fontSize: '14px',
+              color: '#cc0000'
+            }}>
+              {error}
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div style={{
           display: 'flex',
@@ -173,7 +274,7 @@ export default function GenerateSummaryModal({
         }}>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               padding: '10px 20px',
               backgroundColor: '#6c757d',
@@ -186,24 +287,42 @@ export default function GenerateSummaryModal({
           >
             Close
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              // TODO: This will be wired up to OpenAI later
-              alert('OpenAI integration coming soon!');
-            }}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            🤖 Generate with AI (Coming Soon)
-          </button>
+          
+          {generatedContent ? (
+            <button
+              type="button"
+              onClick={handleUseGenerated}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              ✅ Use This Content
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: isGenerating ? '#6c757d' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                opacity: isGenerating ? 0.7 : 1
+              }}
+            >
+              {isGenerating ? '⏳ Generating...' : '🤖 Generate with AI'}
+            </button>
+          )}
         </div>
       </div>
     </div>

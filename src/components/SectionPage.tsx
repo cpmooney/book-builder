@@ -35,6 +35,11 @@ export default function SectionPage({
   const [isSaving, setIsSaving] = useState(false);
   const [showGenerateSummaryModal, setShowGenerateSummaryModal] = useState(false);
 
+  const handleSummaryGenerated = (content: string) => {
+    setEditSummary(content);
+    setShowGenerateSummaryModal(false);
+  };
+
   useEffect(() => {
     const loadSection = async () => {
       if (!user) return;
@@ -606,6 +611,7 @@ export default function SectionPage({
         prompt={getPromptForAI()}
         entityType="section"
         entityTitle={section?.title || 'Unknown Section'}
+        onGenerated={handleSummaryGenerated}
       />
     </div>
   );

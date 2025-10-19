@@ -52,6 +52,11 @@ export default function EntityEditModal({
   const [summary, setSummary] = useState(initialSummary);
   const [showGenerateSummaryModal, setShowGenerateSummaryModal] = useState(false);
 
+  const handleSummaryGenerated = (content: string) => {
+    setSummary(content);
+    setShowGenerateSummaryModal(false);
+  };
+
   const config = ENTITY_CONFIG[entityType];
   const isCreateMode = mode === 'create';
 
@@ -294,6 +299,7 @@ export default function EntityEditModal({
         prompt={getPromptForAI()}
         entityType={entityType}
         entityTitle={title || initialTitle || `Unknown ${config.label}`}
+        onGenerated={handleSummaryGenerated}
       />
     </div>
   );

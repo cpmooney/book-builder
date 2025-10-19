@@ -45,6 +45,8 @@ import NoteEditModal, { type NoteFormData } from './NoteEditModal';
 import NotesListView from './NotesListView';
 import type { Note } from '../types/book-builder';
 import MoveEntityModal from './MoveEntityModal';
+import ScaffoldModal from './ScaffoldModal';
+import type { ScaffoldItem } from '@/lib/ai';
 
 export interface HierarchicalEntityConfig {
   level: 'book' | 'part' | 'chapter' | 'section';
@@ -117,6 +119,9 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
   const [editingChildId, setEditingChildId] = useState<string>('');
   const [editingChildTitle, setEditingChildTitle] = useState<string>('');
   const [editingChildSummary, setEditingChildSummary] = useState<string>('');
+
+  // Scaffold state
+  const [scaffoldModalOpen, setScaffoldModalOpen] = useState(false);
 
   const { level, entityId, parentIds } = config;
   const levelConfig = LEVEL_CONFIGS[level];
@@ -205,6 +210,49 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
   const handleCreateChild = async () => {
     console.log('handleCreateChild called for level:', level);
     setCreateChildModalOpen(true);
+  };
+
+  // Handle scaffold children
+  const handleScaffold = () => {
+    setScaffoldModalOpen(true);
+  };
+
+  const handleScaffoldComplete = async (scaffoldedItems: ScaffoldItem[]) => {
+    if (!user?.uid) return;
+
+    try {
+      // Create each scaffolded item as a child entity
+      for (const item of scaffoldedItems) {
+        const childData = {
+          title: item.title,
+          summary: item.summary,
+          content: ''
+        };
+
+        switch (level) {
+          case 'book':
+            await createPart(user.uid, entityId, childData);
+            break;
+          case 'part':
+            if (!parentIds.bookId) throw new Error('Book ID required');
+            await createChapter(user.uid, parentIds.bookId, entityId, childData);
+            break;
+          case 'chapter':
+            if (!parentIds.bookId || !parentIds.partId) throw new Error('Book and Part IDs required');
+            await createSection(user.uid, parentIds.bookId, parentIds.partId, entityId, childData);
+            break;
+          default:
+            console.log('Scaffold not supported for', level);
+            return;
+        }
+      }
+
+      // Reload the data to show new children
+      globalThis.location.reload(); // Simple reload for now
+      setScaffoldModalOpen(false);
+    } catch (error) {
+      console.error('Error creating scaffolded children:', error);
+    }
   };
 
   // Handle saving new child from modal
@@ -913,6 +961,23 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       >
         ✏️ Edit {levelConfig.entityLabel}
       </button>
+      {level !== 'section' && (
+        <button
+          type="button"
+          onClick={handleScaffold}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#ffc107',
+            color: 'black',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          🏗️ Scaffold {levelConfig.childLabelPlural}
+        </button>
+      )}
       <button
         type="button"
         onClick={() => {
@@ -1130,6 +1195,14 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         note={editingNote}
         entityType={level}
         entityTitle={entityForView?.title || 'Unknown'}
+      />
+
+      <ScaffoldModal
+        isOpen={scaffoldModalOpen}
+        onClose={() => setScaffoldModalOpen(false)}
+        onScaffold={handleScaffoldComplete}
+        parentTitle={entityForView?.title || 'Unknown'}
+        childType={levelConfig.childType}
       />
 
     </>
