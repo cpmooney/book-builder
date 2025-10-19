@@ -1,24 +1,18 @@
-import HierarchicalEntityPage from '@/components/HierarchicalEntityPage';
+import SectionPage from '@/components/SectionPage';
 
-export default async function SectionPage({
-  params
-}: {
-  params: Promise<{ bookId: string; partId: string; chapterId: string; sectionId: string }>
-}) {
+interface SectionPageProps {
+  params: Promise<{ bookId: string; partId: string; chapterId: string; sectionId: string }>;
+}
+
+export default async function Section({ params }: SectionPageProps) {
   const { bookId, partId, chapterId, sectionId } = await params;
-
+  
   return (
-    <HierarchicalEntityPage
-      config={{
-        level: 'section',
-        entityId: sectionId,
-        parentIds: {
-          bookId,
-          partId,
-          chapterId,
-          sectionId
-        }
-      }}
+    <SectionPage
+      bookId={bookId}
+      partId={partId}
+      chapterId={chapterId}
+      sectionId={sectionId}
     />
   );
 }

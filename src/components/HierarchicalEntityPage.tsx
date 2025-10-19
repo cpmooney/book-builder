@@ -184,6 +184,8 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
 
     try {
       console.log('Creating child:', { level, title, summary, parentIds });
+      
+      // For all levels, use summary field (sections have both summary and content)
       const childData = { title, summary };
 
       switch (level) {
@@ -511,7 +513,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       children = entityData.sections?.map((section: any) => ({
         id: section.id,
         title: section.title,
-        summary: section.summary
+        summary: section.summary  // Sections use summary for chapter view
       })) || [];
       break;
       
@@ -602,7 +604,6 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         // Special view for sections - they don't have children
         <div style={{ padding: '20px' }}>
           <h1>{entityData?.section?.title || 'Untitled Section'}</h1>
-          <p>{entityData?.section?.summary || 'No summary available'}</p>
           <div style={{ marginTop: '20px' }}>
             <button
               type="button"
@@ -636,9 +637,26 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
               📄 Section Overview
             </button>
           </div>
-          <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-            <h3>Section Content</h3>
-            <p>Content editing interface will be implemented here.</p>
+          <div style={{ 
+            marginTop: '20px', 
+            padding: '20px', 
+            backgroundColor: '#f8f9fa', 
+            borderRadius: '4px',
+            border: '1px solid #dee2e6'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '15px' }}>Section Content</h3>
+            <div style={{ 
+              whiteSpace: 'pre-wrap',  // Preserves whitespace and line breaks
+              fontSize: '14px',
+              lineHeight: '1.5',
+              minHeight: '100px',
+              padding: '10px',
+              backgroundColor: 'white',
+              border: '1px solid #dee2e6',
+              borderRadius: '4px'
+            }}>
+              {entityData?.section?.content || 'No content yet. Click "Edit Section" to add content.'}
+            </div>
           </div>
         </div>
       ) : (

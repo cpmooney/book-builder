@@ -39,7 +39,8 @@ export type Section = {
   partId: string;
   chapterId: string;
   title: string;
-  summary?: string;
+  summary?: string;  // Brief summary for chapter view
+  content?: string;  // Full content for section editing
   sortKey: number;
   createdAt: any;
   updatedAt: any;
