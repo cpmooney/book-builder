@@ -24,7 +24,7 @@ export default function PartEdit({
   useEffect(() => {
     setTitle(initialTitle);
     setSummary(initialSummary);
-  }, [initialTitle, initialSummary, isOpen]);
+  }, [initialTitle, initialSummary]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +76,7 @@ export default function PartEdit({
         
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
-            <label style={{
+            <label htmlFor="part-title" style={{
               display: 'block',
               marginBottom: '6px',
               fontWeight: '500',
@@ -85,12 +85,12 @@ export default function PartEdit({
               Title *
             </label>
             <input
+              id="part-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter part title"
               required
-              autoFocus
               style={{
                 width: '100%',
                 padding: '10px',
@@ -101,9 +101,8 @@ export default function PartEdit({
               }}
             />
           </div>
-
           <div style={{ marginBottom: '24px' }}>
-            <label style={{
+            <label htmlFor="part-summary" style={{
               display: 'block',
               marginBottom: '6px',
               fontWeight: '500',
@@ -112,6 +111,7 @@ export default function PartEdit({
               Summary
             </label>
             <textarea
+              id="part-summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               placeholder="Enter part summary (optional)"

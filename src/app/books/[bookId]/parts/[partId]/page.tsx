@@ -2,24 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { getBookTOC, createChapter, updateChapter, deleteChapter } from '../../../../../features/books/data';
+import { getPartTOC, createChapter, updatePart, reorderChapters, deleteChapter } from '../../../../../features/books/data';
 import { useAuth } from '../../../../../components/AuthProvider';
-import ChapterEdit from '../../../../../components/ChapterEdit';
+import PartEdit from '../../../../../components/PartEdit';
+import EntityListView, { 
+  type BreadcrumbItem, 
+  type EntityListViewConfig, 
+  type ChildData,
+  type EntityData
+} from '../../../../../components/EntityListView';
 
 export default function PartPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const [partData, setPartData] = useState<any>(null);
-  const [bookData, setBookData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [chapterEditModalOpen, setChapterEditModalOpen] = useState(false);
-  const [editingChapter, setEditingChapter] = useState<{
-    id: string;
-    title: string;
-    summary: string;
-  } | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const bookId = params.bookId as string;
   const partId = params.partId as string;
@@ -32,25 +31,21 @@ export default function PartPage() {
   }, [user, router]);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadPartData = async () => {
       if (!user?.uid || !bookId || !partId) return;
       
       try {
         setLoading(true);
-        const data = await getBookTOC(user.uid, bookId);
-        setBookData(data);
-        
-        // Find the specific part
-        const currentPart = data.parts?.find((p: any) => p.part.id === partId);
-        setPartData(currentPart);
+        const data = await getPartTOC(user.uid, bookId, partId);
+        setPartData(data);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading part data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
+    loadPartData();
   }, [user?.uid, bookId, partId]);
 
   const handleAddChapter = async () => {
@@ -61,218 +56,181 @@ export default function PartPage() {
         title: 'New Chapter',
         summary: ''
       });
-      // Reload data
-      const data = await getBookTOC(user.uid, bookId);
-      setBookData(data);
-      const currentPart = data.parts?.find((p: any) => p.part.id === partId);
-      setPartData(currentPart);
+      // Reload the part data
+      const data = await getPartTOC(user.uid, bookId, partId);
+      setPartData(data);
     } catch (error) {
       console.error('Error creating chapter:', error);
       alert('Error creating chapter');
     }
   };
 
-  const handleEditChapter = (chapterId: string, title: string, summary: string) => {
-    setEditingChapter({ id: chapterId, title, summary });
-    setChapterEditModalOpen(true);
+  const handleEditPart = () => {
+    setEditModalOpen(true);
   };
 
-  const handleSaveChapter = async (title: string, summary: string) => {
-    if (!editingChapter || !user?.uid) return;
+  const handleSavePartEdit = async (title: string, summary: string) => {
+    if (!partData || !user?.uid) return;
 
     try {
-      const updateData: Record<string, unknown> = {};
-      if (title !== editingChapter.title) {
-        updateData.title = title;
-      }
-      if (summary !== editingChapter.summary) {
-        updateData.summary = summary;
-      }
-
-      if (Object.keys(updateData).length > 0) {
-        await updateChapter(user.uid, bookId, partId, editingChapter.id, updateData);
-        // Reload data
-        const data = await getBookTOC(user.uid, bookId);
-        setBookData(data);
-        const currentPart = data.parts?.find((p: any) => p.part.id === partId);
-        setPartData(currentPart);
-      }
+      await updatePart(user.uid, bookId, partId, { title, summary });
+      // Reload the part data
+      const data = await getPartTOC(user.uid, bookId, partId);
+      setPartData(data);
+      setEditModalOpen(false);
     } catch (error) {
-      console.error('Error updating chapter:', error);
-      alert('Error updating chapter');
-      throw error;
+      console.error('Error updating part:', error);
+      alert('Error updating part');
     }
   };
 
-  const handleDeleteChapter = async (chapterId: string, chapterTitle: string) => {
+  const handleDeleteChapter = async (chapterId: string, title: string) => {
     if (!user?.uid) return;
     
-    if (confirm(`Are you sure you want to delete the chapter "${chapterTitle}"? This will also delete all its sections.`)) {
-      try {
-        await deleteChapter(user.uid, bookId, partId, chapterId);
-        // Reload data
-        const data = await getBookTOC(user.uid, bookId);
-        setBookData(data);
-        const currentPart = data.parts?.find((p: any) => p.part.id === partId);
-        setPartData(currentPart);
-        alert('Chapter deleted successfully');
-      } catch (error) {
-        console.error('Error deleting chapter:', error);
-        alert('Error deleting chapter');
-      }
+    if (!confirm(`Are you sure you want to delete "${title}"? This will also delete all sections within this chapter.`)) {
+      return;
+    }
+
+    try {
+      await deleteChapter(user.uid, bookId, partId, chapterId);
+      // Reload the part data
+      const data = await getPartTOC(user.uid, bookId, partId);
+      setPartData(data);
+    } catch (error) {
+      console.error('Error deleting chapter:', error);
+      alert('Error deleting chapter');
+    }
+  };
+
+  const handleReorderChapters = async (activeId: string, overId: string) => {
+    if (!user?.uid || !partData?.chapters) return;
+    
+    try {
+      // Find the current order and create new order
+      const currentChapters = partData.chapters.map((c: any) => c.id);
+      const activeIndex = currentChapters.indexOf(activeId);
+      const overIndex = currentChapters.indexOf(overId);
+      
+      // Create new order array
+      const newOrder = [...currentChapters];
+      newOrder.splice(activeIndex, 1);
+      newOrder.splice(overIndex, 0, activeId);
+      
+      await reorderChapters(user.uid, bookId, partId, newOrder);
+      // Reload the part data
+      const data = await getPartTOC(user.uid, bookId, partId);
+      setPartData(data);
+    } catch (error) {
+      console.error('Error reordering chapters:', error);
+      throw error; // Re-throw to trigger optimistic rollback
     }
   };
 
   if (!user) {
-    return null;
+    return null; // Will redirect in useEffect
   }
 
-  if (loading) {
-    return <div style={{ padding: '20px' }}>Loading part...</div>;
+  if (!partData) {
+    return <EntityListView
+      entityData={{ id: '', title: '', summary: '' }}
+      items={[]}
+      config={{
+        entityType: 'part',
+        childType: 'chapter',
+        entityLabel: 'Part',
+        childLabel: 'Chapter',
+        childLabelPlural: 'Chapters',
+        showRomanNumerals: false,
+        showOverview: false
+      }}
+      breadcrumbs={[]}
+      loading={true}
+      onEdit={() => {}}
+      onDelete={() => {}}
+      onCreate={async () => {}}
+      onReorder={async () => {}}
+      getChildPath={() => ''}
+    />;
   }
 
-  if (!partData || !bookData) {
-    return <div style={{ padding: '20px' }}>Part not found</div>;
-  }
+  // Transform part data for EntityListView
+  const entityData: EntityData = {
+    id: partData.part.id,
+    title: partData.part.title,
+    summary: partData.part.summary
+  };
+
+  const children: ChildData[] = partData.chapters?.map((chapter: any) => ({
+    id: chapter.id,
+    title: chapter.title,
+    summary: chapter.summary,
+    sections: [] // TODO: Load sections if needed
+  })) || [];
+
+  const breadcrumbs: BreadcrumbItem[] = [
+    { label: 'Books', href: '/' },
+    { label: 'Book', href: `/books/${bookId}` }, // TODO: Get actual book title
+    { label: partData.part.title }
+  ];
+
+  const config: EntityListViewConfig = {
+    entityType: 'part',
+    childType: 'chapter',
+    entityLabel: 'Part',
+    childLabel: 'Chapter',
+    childLabelPlural: 'Chapters',
+    showRomanNumerals: false,
+    showOverview: false
+  };
+
+  const getChildPath = (child: ChildData) => `/books/${bookId}/parts/${partId}/chapters/${child.id}`;
+  const getChildCount = (child: ChildData) => (child.sections as unknown[])?.length || 0;
+
+  const editPartButton = (
+    <button
+      type="button"
+      onClick={handleEditPart}
+      style={{
+        padding: '8px 16px',
+        backgroundColor: '#6c757d',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '14px'
+      }}
+    >
+      ✏️ Edit Part
+    </button>
+  );
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <Link href="/books" style={{ color: '#007bff', textDecoration: 'none' }}>
-          ← Books
-        </Link>
-        <span style={{ margin: '0 8px', color: '#666' }}>/</span>
-        <Link href={`/books/${bookId}`} style={{ color: '#007bff', textDecoration: 'none' }}>
-          {bookData.title}
-        </Link>
-      </div>
-
-      <div style={{ marginBottom: '30px' }}>
-        <h1>{partData.part.title}</h1>
-        {partData.part.summary && (
-          <p style={{ color: '#666', fontSize: '16px', marginTop: '10px' }}>
-            {partData.part.summary}
-          </p>
-        )}
-      </div>
-
-      <div style={{ marginBottom: '20px' }}>
-        <button
-          type="button"
-          onClick={handleAddChapter}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          + Add Chapter
-        </button>
-      </div>
-
-      <div>
-        <h2>Chapters</h2>
-        {partData.chapters && partData.chapters.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {partData.chapters.map((chapter: any) => (
-              <div
-                key={chapter.id}
-                style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  backgroundColor: '#f9f9f9'
-                }}
-              >
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{ flex: 1 }}>
-                    <Link 
-                      href={`/books/${bookId}/parts/${partId}/chapters/${chapter.id}`}
-                      style={{ 
-                        textDecoration: 'none', 
-                        color: '#007bff',
-                        fontSize: '18px',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {chapter.title}
-                    </Link>
-                    {chapter.summary && (
-                      <p style={{ 
-                        color: '#666', 
-                        fontSize: '14px', 
-                        marginTop: '8px',
-                        fontStyle: 'italic'
-                      }}>
-                        {chapter.summary}
-                      </p>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleEditChapter(chapter.id, chapter.title, chapter.summary || '')}
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#6c757d',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteChapter(chapter.id, chapter.title)}
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <strong>Sections: </strong>
-                  {chapter.sections && chapter.sections.length > 0 ? (
-                    <span>{chapter.sections.length}</span>
-                  ) : (
-                    <span style={{ color: '#999' }}>No sections yet</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: '#666' }}>No chapters yet. Add your first chapter to get started.</p>
-        )}
-      </div>
-
-      <ChapterEdit
-        isOpen={chapterEditModalOpen}
-        onClose={() => setChapterEditModalOpen(false)}
-        onSave={handleSaveChapter}
-        initialTitle={editingChapter?.title || ''}
-        initialSummary={editingChapter?.summary || ''}
+    <>
+      <EntityListView
+        entityData={entityData}
+        items={children}
+        config={config}
+        breadcrumbs={breadcrumbs}
+        loading={loading}
+        onEdit={(id, title, summary) => {
+          // For chapters, we'll handle editing differently
+          alert('Chapter editing not yet implemented');
+        }}
+        onDelete={handleDeleteChapter}
+        onCreate={handleAddChapter}
+        onReorder={handleReorderChapters}
+        getChildPath={getChildPath}
+        getChildCount={getChildCount}
+        extraActions={editPartButton}
       />
-    </div>
+
+      <PartEdit
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSave={handleSavePartEdit}
+        initialTitle={partData?.part?.title || ''}
+        initialSummary={partData?.part?.summary || ''}
+      />
+    </>
   );
 }

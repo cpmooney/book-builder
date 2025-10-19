@@ -119,7 +119,7 @@ export default function BooksPage() {
           }}>
             <h3 style={{ marginTop: 0 }}>Create New Book</h3>
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ 
+              <label htmlFor="bookTitle" style={{ 
                 display: 'block', 
                 marginBottom: '4px', 
                 fontWeight: '500' 
@@ -127,6 +127,7 @@ export default function BooksPage() {
                 Title *
               </label>
               <input
+                id="bookTitle"
                 type="text"
                 value={newBookTitle}
                 onChange={(e) => setNewBookTitle(e.target.value)}
@@ -140,9 +141,8 @@ export default function BooksPage() {
                 placeholder="Enter book title"
                 disabled={creating}
               />
-            </div>
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ 
+              <label htmlFor="bookDescription" style={{ 
                 display: 'block', 
                 marginBottom: '4px', 
                 fontWeight: '500' 
@@ -150,6 +150,7 @@ export default function BooksPage() {
                 Description
               </label>
               <textarea
+                id="bookDescription"
                 value={newBookDescription}
                 onChange={(e) => setNewBookDescription(e.target.value)}
                 style={{
@@ -164,6 +165,7 @@ export default function BooksPage() {
                 placeholder="Enter book description (optional)"
                 disabled={creating}
               />
+            </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -224,8 +226,7 @@ export default function BooksPage() {
                   padding: '20px',
                   backgroundColor: 'white',
                   cursor: 'pointer',
-                  transition: 'box-shadow 0.2s',
-                  ':hover': { boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
+                  transition: 'box-shadow 0.2s'
                 }}>
                   <h3 style={{ 
                     margin: '0 0 8px 0', 
