@@ -2,23 +2,54 @@
 
 import { useState, useEffect } from 'react';
 
-interface PartEditProps {
+export interface EntityEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (title: string, summary: string) => void;
   initialTitle: string;
   initialSummary: string;
+  entityType: 'book' | 'part' | 'chapter' | 'section';
+  mode?: 'create' | 'edit';
 }
 
-export default function PartEdit({
+// Configuration for different entity types
+const ENTITY_CONFIG = {
+  book: {
+    label: 'Book',
+    titleLabel: 'Book Title',
+    summaryLabel: 'Book Summary'
+  },
+  part: {
+    label: 'Part',
+    titleLabel: 'Part Title', 
+    summaryLabel: 'Part Summary'
+  },
+  chapter: {
+    label: 'Chapter',
+    titleLabel: 'Chapter Title',
+    summaryLabel: 'Chapter Summary'
+  },
+  section: {
+    label: 'Section',
+    titleLabel: 'Section Title',
+    summaryLabel: 'Section Summary'
+  }
+};
+
+export default function EntityEditModal({
   isOpen,
   onClose,
   onSave,
   initialTitle,
-  initialSummary
-}: PartEditProps) {
+  initialSummary,
+  entityType,
+  mode = 'edit'
+}: Readonly<EntityEditModalProps>) {
   const [title, setTitle] = useState(initialTitle);
   const [summary, setSummary] = useState(initialSummary);
+
+  const config = ENTITY_CONFIG[entityType];
+  const isCreateMode = mode === 'create';
 
   // Reset form when modal opens with new data
   useEffect(() => {
@@ -57,39 +88,43 @@ export default function PartEdit({
     }}>
       <div style={{
         backgroundColor: 'white',
-        padding: '24px',
         borderRadius: '8px',
-        width: '500px',
-        maxWidth: '90vw',
-        maxHeight: '80vh',
+        padding: '24px',
+        width: '90%',
+        maxWidth: '500px',
+        maxHeight: '90vh',
         overflow: 'auto',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
       }}>
-        <h3 style={{ 
-          marginTop: 0, 
-          marginBottom: '20px',
+        <h2 style={{
+          margin: '0 0 20px 0',
+          color: '#333',
           fontSize: '20px',
           fontWeight: '600'
         }}>
-          Edit Part
-        </h3>
-        
+          {isCreateMode ? `Create New ${config.label}` : `Edit ${config.label}`}
+        </h2>
+
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
-            <label htmlFor="part-title" style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontWeight: '500',
-              fontSize: '14px'
-            }}>
-              Title *
+            <label 
+              htmlFor="title"
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontWeight: '500',
+                color: '#333',
+                fontSize: '14px'
+              }}
+            >
+              {config.titleLabel}:
             </label>
             <input
-              id="part-title"
+              id="title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter part title"
+              placeholder={`Enter ${config.titleLabel.toLowerCase()}`}
               required
               style={{
                 width: '100%',
@@ -101,20 +136,25 @@ export default function PartEdit({
               }}
             />
           </div>
+
           <div style={{ marginBottom: '24px' }}>
-            <label htmlFor="part-summary" style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontWeight: '500',
-              fontSize: '14px'
-            }}>
-              Summary
+            <label 
+              htmlFor="summary"
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontWeight: '500',
+                color: '#333',
+                fontSize: '14px'
+              }}
+            >
+              {config.summaryLabel}:
             </label>
             <textarea
-              id="part-summary"
+              id="summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="Enter part summary (optional)"
+              placeholder={`Enter ${config.summaryLabel.toLowerCase()}`}
               rows={4}
               style={{
                 width: '100%',
@@ -123,7 +163,8 @@ export default function PartEdit({
                 borderRadius: '4px',
                 fontSize: '14px',
                 resize: 'vertical',
-                outline: 'none'
+                outline: 'none',
+                fontFamily: 'inherit'
               }}
             />
           </div>
@@ -160,7 +201,7 @@ export default function PartEdit({
                 fontSize: '14px'
               }}
             >
-              Save Changes
+              {isCreateMode ? `Create ${config.label}` : 'Save Changes'}
             </button>
           </div>
         </form>
