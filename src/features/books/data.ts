@@ -354,12 +354,22 @@ export async function updateBlock(
 
 // Query functions
 /**
- * Gets the table of contents for a book (all parts with their chapters)
+ * Gets the table of contents for a book (book data with parts and their chapters)
  * @param uid - User ID
  * @param bookId - Book ID
- * @returns Object with parts array, each containing part data and its chapters
+ * @returns Object with book data and parts array, each containing part data and its chapters
  */
 export async function getBookTOC(uid: string, bookId: string) {
+  // Get book document
+  const bookRef = doc(db, 'users', uid, 'books', bookId);
+  const bookSnapshot = await getDoc(bookRef);
+  
+  if (!bookSnapshot.exists()) {
+    throw new Error('Book not found');
+  }
+  
+  const book = { id: bookSnapshot.id, ...bookSnapshot.data() } as Book;
+  
   const partsRef = collection(db, 'users', uid, 'books', bookId, 'parts');
   const partsSnapshot = await getDocs(query(partsRef, orderBy('sortKey')));
   
@@ -379,7 +389,7 @@ export async function getBookTOC(uid: string, bookId: string) {
     })
   );
   
-  return { parts };
+  return { ...book, parts };
 }
 
 /**

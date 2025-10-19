@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getBookTOC, createPart, updatePart, deletePart, reorderParts } from '../../../features/books/data';
 import { useAuth } from '../../../components/AuthProvider';
 import PartEdit from '../../../components/PartEdit';
+import BookOverview from '../../../components/BookOverview';
 import {
   DndContext,
   closestCenter,
@@ -25,14 +26,30 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+// Helper function to convert number to Roman numerals
+function toRoman(num: number): string {
+  const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+  const symbols = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+  
+  let result = '';
+  for (let i = 0; i < values.length; i++) {
+    while (num >= values[i]) {
+      result += symbols[i];
+      num -= values[i];
+    }
+  }
+  return result;
+}
+
 interface SortablePartItemProps {
   partData: any;
   bookId: string;
+  partNumber: number;
   onEdit: (id: string, title: string, summary: string) => void;
   onDelete: (id: string, title: string) => void;
 }
 
-function SortablePartItem({ partData, bookId, onEdit, onDelete }: SortablePartItemProps) {
+function SortablePartItem({ partData, bookId, partNumber, onEdit, onDelete }: SortablePartItemProps) {
   const {
     attributes,
     listeners,
@@ -55,10 +72,8 @@ function SortablePartItem({ partData, bookId, onEdit, onDelete }: SortablePartIt
         borderRadius: '8px',
         padding: '16px',
         backgroundColor: '#f9f9f9',
-        cursor: 'grab'
+        position: 'relative'
       }}
-      {...attributes}
-      {...listeners}
     >
       <div style={{
         display: 'flex',
@@ -66,28 +81,49 @@ function SortablePartItem({ partData, bookId, onEdit, onDelete }: SortablePartIt
         alignItems: 'flex-start',
         marginBottom: '12px'
       }}>
-        <div style={{ flex: 1 }}>
-          <Link 
-            href={`/books/${bookId}/parts/${partData.part.id}`}
-            style={{ 
-              textDecoration: 'none', 
-              color: '#007bff',
-              fontSize: '18px',
-              fontWeight: 'bold'
+        <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1, gap: '8px' }}>
+          <div 
+            {...attributes}
+            {...listeners}
+            style={{
+              cursor: 'grab',
+              padding: '4px',
+              color: '#999',
+              fontSize: '16px',
+              userSelect: 'none',
+              display: 'flex',
+              alignItems: 'center'
             }}
+            title="Drag to reorder"
           >
-            {partData.part.title}
-          </Link>
-          {partData.part.summary && (
-            <p style={{ 
-              color: '#666', 
-              fontSize: '14px', 
-              marginTop: '8px',
-              fontStyle: 'italic'
-            }}>
-              {partData.part.summary}
-            </p>
-          )}
+            ⋮⋮
+          </div>
+          <div style={{ flex: 1 }}>
+            <Link 
+              href={`/books/${bookId}/parts/${partData.part.id}`}
+              style={{ 
+                textDecoration: 'none', 
+                color: '#007bff',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}
+            >
+              <span style={{ color: '#666', marginRight: '8px' }}>
+                {toRoman(partNumber)}.
+              </span>
+              {partData.part.title}
+            </Link>
+            {partData.part.summary && (
+              <p style={{ 
+                color: '#666', 
+                fontSize: '14px', 
+                marginTop: '8px',
+                fontStyle: 'italic'
+              }}>
+                {partData.part.summary}
+              </p>
+            )}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
@@ -152,6 +188,7 @@ export default function BookPage() {
     title: string;
     summary: string;
   } | null>(null);
+  const [overviewModalOpen, setOverviewModalOpen] = useState(false);
 
   const bookId = params.bookId as string;
 
@@ -306,8 +343,9 @@ export default function BookPage() {
         )}
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', gap: '12px' }}>
         <button
+          type="button"
           onClick={handleAddPart}
           style={{
             padding: '10px 20px',
@@ -320,6 +358,21 @@ export default function BookPage() {
           }}
         >
           + Add Part
+        </button>
+        <button
+          type="button"
+          onClick={() => setOverviewModalOpen(true)}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          📖 Book Overview
         </button>
       </div>
 
@@ -336,11 +389,12 @@ export default function BookPage() {
               strategy={verticalListSortingStrategy}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {bookData.parts.map((partData: any) => (
+                {bookData.parts.map((partData: any, index: number) => (
                   <SortablePartItem
                     key={partData.part.id}
                     partData={partData}
                     bookId={bookId}
+                    partNumber={index + 1}
                     onEdit={handleEditPart}
                     onDelete={handleDeletePart}
                   />
@@ -359,6 +413,12 @@ export default function BookPage() {
         onSave={handleSavePartEdit}
         initialTitle={editingPart?.title || ''}
         initialSummary={editingPart?.summary || ''}
+      />
+
+      <BookOverview
+        isOpen={overviewModalOpen}
+        onClose={() => setOverviewModalOpen(false)}
+        bookData={bookData}
       />
     </div>
   );
