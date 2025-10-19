@@ -59,3 +59,25 @@ export type Block = {
   createdAt: any;
   updatedAt: any;
 };
+
+export type Note = {
+  id: string;
+  uid: string;
+  // Parent entity information - at least one must be set
+  bookId?: string;
+  partId?: string;
+  chapterId?: string;
+  sectionId?: string;
+  // Note content
+  title: string;
+  content: string;
+  // Tags for categorization (optional)
+  tags?: string[];
+  // Priority level
+  priority: 'low' | 'medium' | 'high';
+  // Whether the note is archived
+  archived: boolean;
+  sortKey: number;
+  createdAt: Date | { seconds: number; nanoseconds: number };
+  updatedAt: Date | { seconds: number; nanoseconds: number };
+};

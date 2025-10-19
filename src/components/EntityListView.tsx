@@ -97,6 +97,7 @@ export interface EntityListViewProps {
   loading: boolean;
   onEdit: (id: string, title: string, summary: string) => void;
   onDelete: (id: string, title: string) => void;
+  onMove?: (id: string) => void;
   onCreate: () => Promise<void>;
   onReorder: (activeId: string, overId: string) => Promise<void>;
   onShowOverview?: () => void;
@@ -111,6 +112,7 @@ interface SortableChildItemProps {
   config: EntityListViewConfig;
   onEdit: (id: string, title: string, summary: string) => void;
   onDelete: (id: string, title: string) => void;
+  onMove?: (id: string) => void;
   getChildPath: (child: ChildData) => string;
   getChildCount?: (child: ChildData) => number;
 }
@@ -121,9 +123,10 @@ function SortableChildItem({
   config,
   onEdit, 
   onDelete, 
+  onMove,
   getChildPath,
   getChildCount
-}: SortableChildItemProps) {
+}: Readonly<SortableChildItemProps>) {
   const {
     attributes,
     listeners,
@@ -232,6 +235,29 @@ function SortableChildItem({
           >
             Edit
           </button>
+          {onMove && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMove(child.id);
+              }}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                minHeight: '40px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              Move
+            </button>
+          )}
           <button
             type="button"
             onClick={(e) => {
@@ -267,13 +293,13 @@ export default function EntityListView({
   loading,
   onEdit,
   onDelete,
+  onMove,
   onCreate,
   onReorder,
-  onShowOverview,
   getChildPath,
   getChildCount,
   extraActions
-}: EntityListViewProps) {
+}: Readonly<EntityListViewProps>) {
   const [items, setItems] = useState<ChildData[]>(initialItems);
 
   const sensors = useSensors(
@@ -431,6 +457,7 @@ export default function EntityListView({
                     config={config}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onMove={onMove}
                     getChildPath={getChildPath}
                     getChildCount={getChildCount}
                   />

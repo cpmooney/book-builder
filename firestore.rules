@@ -9,17 +9,37 @@ service cloud.firestore {
       match /books/{bookId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
         
+        // Book-level notes
+        match /notes/{noteId} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
+        }
+        
         // Parts collection
         match /parts/{partId} {
           allow read, write: if request.auth != null && request.auth.uid == uid;
+          
+          // Part-level notes
+          match /notes/{noteId} {
+            allow read, write: if request.auth != null && request.auth.uid == uid;
+          }
           
           // Chapters collection
           match /chapters/{chapterId} {
             allow read, write: if request.auth != null && request.auth.uid == uid;
             
+            // Chapter-level notes
+            match /notes/{noteId} {
+              allow read, write: if request.auth != null && request.auth.uid == uid;
+            }
+            
             // Sections collection
             match /sections/{sectionId} {
               allow read, write: if request.auth != null && request.auth.uid == uid;
+              
+              // Section-level notes
+              match /notes/{noteId} {
+                allow read, write: if request.auth != null && request.auth.uid == uid;
+              }
               
               // Blocks collection
               match /blocks/{blockId} {
