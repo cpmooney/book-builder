@@ -689,6 +689,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         initialSummary={entityForView?.summary || ''}
         entityType={level}
         mode="edit"
+        entityData={entityData}
       />
 
       <EntityEditModal
@@ -699,6 +700,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         initialSummary=""
         entityType={levelConfig.childType}
         mode="create"
+        entityData={entityData}
       />
 
       <EntityOverview
@@ -708,6 +710,8 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         entityType={level}
         childrenData={children}
       />
+
+
     </>
   );
 }

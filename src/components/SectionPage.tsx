@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthProvider';
+import GenerateSummaryModal from './GenerateSummaryModal';
 import { 
   getSectionContent,
   updateSection
@@ -31,6 +32,7 @@ export default function SectionPage({
   const [editContent, setEditContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showGenerateSummaryModal, setShowGenerateSummaryModal] = useState(false);
 
   useEffect(() => {
     const loadSection = async () => {
@@ -103,6 +105,26 @@ export default function SectionPage({
 
   const goBack = () => {
     router.push(`/books/${bookId}/parts/${partId}/chapters/${chapterId}`);
+  };
+
+  const getPromptForAI = () => {
+    if (!section) return '';
+    
+    const systemPrompt = `You are an expert writing assistant helping to generate concise, professional summaries. Please generate a summary of the following section content in 2-3 clear, engaging sentences that capture the main themes and key points.`;
+    
+    let content = `Title: ${section.title}\n\n`;
+    
+    if (section.summary) {
+      content += `Current Summary: ${section.summary}\n\n`;
+    }
+    
+    if (section.content) {
+      content += `Content:\n${section.content}`;
+    } else {
+      content += 'No content available.';
+    }
+    
+    return `${systemPrompt}\n\n${content}`;
   };
 
   if (isLoading) {
@@ -243,14 +265,34 @@ export default function SectionPage({
 
           {/* Summary Edit */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              fontWeight: 'bold',
-              fontSize: '14px' 
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '8px'
             }}>
-              Section Summary:
-            </label>
+              <label style={{ 
+                fontWeight: 'bold',
+                fontSize: '14px' 
+              }}>
+                Section Summary:
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowGenerateSummaryModal(true)}
+                style={{
+                  padding: '4px 8px',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                🤖 Generate with AI
+              </button>
+            </div>
             <textarea
               value={editSummary}
               onChange={(e) => setEditSummary(e.target.value)}
@@ -382,6 +424,15 @@ export default function SectionPage({
           </div>
         </div>
       )}
+
+      {/* Generate Summary Modal */}
+      <GenerateSummaryModal
+        isOpen={showGenerateSummaryModal}
+        onClose={() => setShowGenerateSummaryModal(false)}
+        prompt={getPromptForAI()}
+        entityType="section"
+        entityTitle={section?.title || 'Unknown Section'}
+      />
     </div>
   );
 }

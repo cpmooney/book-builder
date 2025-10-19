@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import GenerateSummaryModal from './GenerateSummaryModal';
 
 export interface EntityEditModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ export interface EntityEditModalProps {
   initialSummary: string;
   entityType: 'book' | 'part' | 'chapter' | 'section';
   mode?: 'create' | 'edit';
+  entityData?: any; // Data for generating AI prompts
 }
 
 // Configuration for different entity types
@@ -43,13 +45,71 @@ export default function EntityEditModal({
   initialTitle,
   initialSummary,
   entityType,
-  mode = 'edit'
+  mode = 'edit',
+  entityData
 }: Readonly<EntityEditModalProps>) {
   const [title, setTitle] = useState(initialTitle);
   const [summary, setSummary] = useState(initialSummary);
+  const [showGenerateSummaryModal, setShowGenerateSummaryModal] = useState(false);
 
   const config = ENTITY_CONFIG[entityType];
   const isCreateMode = mode === 'create';
+
+  const getPromptForAI = () => {
+    if (!entityData) return '';
+    
+    const systemPrompt = `You are an expert writing assistant helping to generate concise, professional summaries. Please generate a summary of the following ${entityType} content in 2-3 clear, engaging sentences that capture the main themes and purpose.`;
+    
+    let content = '';
+    
+    // Use current form data
+    const currentTitle = title || initialTitle;
+    const currentSummary = summary || initialSummary;
+    
+    content = `Title: ${currentTitle || `Untitled ${config.label}`}\n\n`;
+    
+    if (currentSummary) {
+      content += `Current Summary: ${currentSummary}\n\n`;
+    }
+    
+    // Add any additional context from entityData if available
+    if (entityData?.overview) {
+      content += `Overview: ${entityData.overview}\n\n`;
+    }
+    
+    // Add children information if available
+    if (entityData?.parts?.length > 0) {
+      content += 'Parts:\n';
+      entityData.parts.forEach((partData: any, index: number) => {
+        const part = partData.part;
+        content += `${index + 1}. ${part.title || 'Untitled Part'}`;
+        if (part.summary) {
+          content += `\n   Summary: ${part.summary}`;
+        }
+        content += '\n\n';
+      });
+    } else if (entityData?.chapters?.length > 0) {
+      content += 'Chapters:\n';
+      entityData.chapters.forEach((chapter: any, index: number) => {
+        content += `${index + 1}. ${chapter.title || 'Untitled Chapter'}`;
+        if (chapter.summary) {
+          content += `\n   Summary: ${chapter.summary}`;
+        }
+        content += '\n\n';
+      });
+    } else if (entityData?.sections?.length > 0) {
+      content += 'Sections:\n';
+      entityData.sections.forEach((section: any, index: number) => {
+        content += `${String.fromCodePoint(65 + index)}. ${section.title || 'Untitled Section'}`;
+        if (section.summary) {
+          content += `\n   Summary: ${section.summary}`;
+        }
+        content += '\n\n';
+      });
+    }
+    
+    return `${systemPrompt}\n\n${content}`;
+  };
 
   // Reset form when modal opens with new data
   useEffect(() => {
@@ -138,18 +198,38 @@ export default function EntityEditModal({
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label 
-              htmlFor="summary"
-              style={{
-                display: 'block',
-                marginBottom: '6px',
-                fontWeight: '500',
-                color: '#333',
-                fontSize: '14px'
-              }}
-            >
-              {config.summaryLabel}:
-            </label>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '6px'
+            }}>
+              <label 
+                htmlFor="summary"
+                style={{
+                  fontWeight: '500',
+                  color: '#333',
+                  fontSize: '14px'
+                }}
+              >
+                {config.summaryLabel}:
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowGenerateSummaryModal(true)}
+                style={{
+                  padding: '4px 8px',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                🤖 Generate with AI
+              </button>
+            </div>
             <textarea
               id="summary"
               value={summary}
@@ -206,6 +286,15 @@ export default function EntityEditModal({
           </div>
         </form>
       </div>
+
+      {/* Generate Summary Modal */}
+      <GenerateSummaryModal
+        isOpen={showGenerateSummaryModal}
+        onClose={() => setShowGenerateSummaryModal(false)}
+        prompt={getPromptForAI()}
+        entityType={entityType}
+        entityTitle={title || initialTitle || `Unknown ${config.label}`}
+      />
     </div>
   );
 }
