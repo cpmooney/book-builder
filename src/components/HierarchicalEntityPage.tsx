@@ -41,6 +41,7 @@ import {
 } from '../features/books/data';// Import edit components
 import EntityEditModal from './EntityEditModal';
 import EntityOverview from './EntityOverview';
+import BookOverviewModal from './BookOverviewModal';
 import NoteEditModal, { type NoteFormData } from './NoteEditModal';
 import NotesListView from './NotesListView';
 import type { Note } from '../types/book-builder';
@@ -122,6 +123,9 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
 
   // Scaffold state
   const [scaffoldModalOpen, setScaffoldModalOpen] = useState(false);
+  
+  // Book overview state
+  const [bookOverviewModalOpen, setBookOverviewModalOpen] = useState(false);
 
   const { level, entityId, parentIds } = config;
   const levelConfig = LEVEL_CONFIGS[level];
@@ -979,6 +983,23 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
           🏗️ Scaffold {levelConfig.childLabelPlural}
         </button>
       )}
+      {level === 'book' && (
+        <button
+          type="button"
+          onClick={() => setBookOverviewModalOpen(true)}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#6f42c1',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          📖 Book Overview
+        </button>
+      )}
       <button
         type="button"
         onClick={() => {
@@ -1204,6 +1225,12 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         onScaffold={handleScaffoldComplete}
         parentTitle={entityForView?.title || 'Unknown'}
         childType={levelConfig.childType}
+      />
+
+      <BookOverviewModal
+        isOpen={bookOverviewModalOpen}
+        onClose={() => setBookOverviewModalOpen(false)}
+        bookData={entityData}
       />
 
     </>
