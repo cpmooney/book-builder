@@ -39,14 +39,9 @@ Please convert the following loose content into a JSON array of ${childType}s. E
 Input content:
 ${content}
 
-Important instructions:
-1. Return ONLY a valid JSON array, nothing else
-2. Each ${childType} should have exactly these fields: {"title": "...", "summary": "..."}
-3. Create meaningful summaries that expand on the brief descriptions provided
-4. Ensure titles are clear and descriptive
-5. The JSON must be valid and parseable
+CRITICAL: Return ONLY the JSON array with NO additional text, explanations, or formatting. Start your response with [ and end with ]. Do not include any text before or after the JSON array.
 
-Expected format:
+Required format (return exactly this structure):
 [
   {"title": "Title 1", "summary": "Detailed summary..."},
   {"title": "Title 2", "summary": "Detailed summary..."}
@@ -57,7 +52,7 @@ Expected format:
       messages: [
         {
           role: 'system',
-          content: 'You are a precise content organizer. Always return valid JSON arrays only, with no additional text or formatting.'
+          content: 'You are a precise content organizer. Return ONLY valid JSON arrays with no explanatory text, markdown, or formatting. Your response must start with [ and end with ].'
         },
         {
           role: 'user',
@@ -82,10 +77,17 @@ Expected format:
 
     try {
       // Clean up the response - remove any markdown code blocks or extra text
-      const cleanedContent = generatedContent
+      let cleanedContent = generatedContent
         .replaceAll(/```json\n?/g, '')
         .replaceAll(/```\n?/g, '')
         .trim();
+      
+      // Extract JSON array from the response if it's wrapped in extra text
+      const jsonArrayRegex = /\[[\s\S]*\]/;
+      const jsonArrayMatch = jsonArrayRegex.exec(cleanedContent);
+      if (jsonArrayMatch) {
+        cleanedContent = jsonArrayMatch[0];
+      }
       
       const parsedItems: ScaffoldItem[] = JSON.parse(cleanedContent);
       
