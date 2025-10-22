@@ -192,16 +192,33 @@ function SortableChildItem({
             {child.title}
           </Link>
           {child.summary && (
-            <p style={{ 
-              color: '#666', 
-              fontSize: '14px', 
-              marginTop: '8px',
-              fontStyle: 'italic',
-              margin: '8px 0 0 0',
-              wordBreak: 'break-word'
-            }}>
-              {child.summary}
-            </p>
+            <div style={{ position: 'relative', marginTop: '8px' }}>
+              <p style={{ 
+                color: '#666', 
+                fontSize: '14px', 
+                fontStyle: 'italic',
+                margin: '0',
+                wordBreak: 'break-word',
+                lineHeight: '1.4',
+                maxHeight: '4.2em', // 3 lines at 1.4 line-height = 4.2em
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical'
+              }}>
+                {child.summary}
+              </p>
+              {/* Fade gradient overlay */}
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '1.4em', // Height of one line
+                background: 'linear-gradient(to bottom, transparent, white)',
+                pointerEvents: 'none'
+              }} />
+            </div>
           )}
         </div>
       </div>
@@ -421,15 +438,32 @@ export default function EntityListView({
         </div>
         
         {entityData.summary && (
-          <p style={{ 
-            color: '#666', 
-            fontSize: '16px', 
-            lineHeight: '1.5',
-            fontStyle: 'italic',
-            margin: '0 0 16px 0'
-          }}>
-            {entityData.summary}
-          </p>
+          <div style={{ position: 'relative', margin: '0 0 16px 0' }}>
+            <p style={{ 
+              color: '#666', 
+              fontSize: '16px', 
+              lineHeight: '1.5',
+              fontStyle: 'italic',
+              margin: '0',
+              maxHeight: '4.5em', // 3 lines at 1.5 line-height = 4.5em
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical'
+            }}>
+              {entityData.summary}
+            </p>
+            {/* Fade gradient overlay */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '1.5em', // Height of one line
+              background: 'linear-gradient(to bottom, transparent, white)',
+              pointerEvents: 'none'
+            }} />
+          </div>
         )}
         
         <button
