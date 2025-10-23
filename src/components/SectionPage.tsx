@@ -35,6 +35,28 @@ export default function SectionPage({
   const [isSaving, setIsSaving] = useState(false);
   const [showGenerateSummaryModal, setShowGenerateSummaryModal] = useState(false);
 
+    // Handler to clear section content
+    const handleClearContent = async () => {
+      if (!user || !section) return;
+      if (!window.confirm('Are you sure you want to clear the section content?')) return;
+      setIsSaving(true);
+      try {
+        await updateSection(user.uid, bookId, partId, chapterId, sectionId, {
+          title: section.title,
+          summary: section.summary,
+          content: ''
+        });
+        setEditContent('');
+        setSection({ ...section, content: '' });
+        alert('Section content cleared!');
+      } catch (error) {
+        console.error('Error clearing content:', error);
+        alert('Error clearing content');
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
   const handleSummaryGenerated = async (content: string) => {
     setEditSummary(content);
     setShowGenerateSummaryModal(false);
@@ -235,7 +257,8 @@ export default function SectionPage({
         alignItems: 'center', 
         marginBottom: '20px',
         paddingBottom: '10px',
-        borderBottom: '1px solid #e0e0e0'
+        borderBottom: '1px solid #e0e0e0',
+        gap: '10px'
       }}>
         <button
           onClick={goBack}
@@ -252,21 +275,40 @@ export default function SectionPage({
         </button>
         
         {!isEditing && !isContentOnlyEditing ? (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            ✏️ Edit Section
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              ✏️ Edit Section
+            </button>
+            <button
+              type="button"
+              onClick={handleClearContent}
+              disabled={isSaving}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                opacity: isSaving ? 0.7 : 1
+              }}
+            >
+              🧹 Clear Content
+            </button>
+          </>
         ) : isContentOnlyEditing ? (
           <div style={{ 
             padding: '8px 16px',
