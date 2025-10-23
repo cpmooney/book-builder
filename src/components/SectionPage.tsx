@@ -9,6 +9,7 @@ import {
   updateSection
 } from '../features/books/data';
 import type { Section } from '../types/book-builder';
+import ReadAloudButton from './ReadAloudButton';
 
 interface SectionPageProps {
   bookId: string;
@@ -308,6 +309,7 @@ export default function SectionPage({
             >
               🧹 Clear Content
             </button>
+            <ReadAloudButton content={section?.content || ''} />
           </>
         ) : isContentOnlyEditing ? (
           <div style={{ 
