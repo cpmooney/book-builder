@@ -554,6 +554,22 @@ export async function listParts(uid: string, bookId: string): Promise<Part[]> {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Part));
 }
 
+export async function getPartTitleAndNumber(
+  uid: string,
+  bookId: string,
+  partId: string
+): Promise<{ title: string; partNumber: number }> {
+  const allParts = await listParts(uid, bookId);
+  const partIndex = allParts.findIndex(part => part.id === partId);
+  if (partIndex === -1) {
+    throw new Error(`Part ${partId} not found`);
+  }
+  return {
+    title: allParts[partIndex].title,
+    partNumber: partIndex + 1
+  };
+}
+
 /**
  * Lists all chapters for a part, ordered by sortKey
  * @param uid - User ID

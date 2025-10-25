@@ -18,7 +18,7 @@ function toRoman(num: number): string {
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { listChapters, listSections } from '@/features/books/data';
+import { getPartTitleAndNumber, listChapters, listSections } from '@/features/books/data';
 import { useAuth } from '@/components/AuthProvider';
 
 interface Section {
@@ -36,6 +36,7 @@ export default function ReadPartPage() {
   const params = useParams();
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [sectionsByChapter, setSectionsByChapter] = useState<Record<string, Section[]>>({});
+  const [partInfo, setPartInfo] = useState<{ title: string; partNumber: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
 
@@ -50,6 +51,8 @@ export default function ReadPartPage() {
         }
         const { bookId, partId } = params as { bookId: string; partId: string };
         const chapters = await listChapters(user.uid, bookId, partId);
+        const thisPartInfo = await getPartTitleAndNumber(user.uid, bookId, partId);
+        setPartInfo(thisPartInfo);
         setChapters(chapters || []);
         const sectionsMap: Record<string, Section[]> = {};
         for (const chapter of chapters) {
@@ -73,25 +76,50 @@ export default function ReadPartPage() {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: 40, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <button type="button" onClick={() => router.back()} style={{ marginBottom: 24, color: '#007bff', background: 'none', border: 'none', fontSize: 16, cursor: 'pointer' }}>← Back</button>
+    <div style={{ maxWidth: 800, margin: '0 auto', padding: 0, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <button type="button" onClick={() => router.back()} style={{ margin: '40px 0 24px 40px', color: '#007bff', background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', position: 'relative', zIndex: 20 }}>← Back</button>
+      {/* Sticky Part Header */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+        background: 'rgba(255,255,255,0.97)',
+        borderBottom: '2px solid #eee',
+        padding: '24px 40px 12px 40px',
+        fontWeight: 600,
+        fontSize: 22,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+      }}>
+        Part {toRoman(partInfo?.partNumber ?? 0)} {partInfo?.title}
+      </div>
       {chapters.length === 0 ? (
-        <div>No chapters found.</div>
+        <div style={{ padding: 40 }}>No chapters found.</div>
       ) : (
         chapters.map((chapter, idx) => {
-          // partId may be a string, so use Number.parseInt
-          const partNumber = toRoman(Number.parseInt(params.partId as string, 10));
           return (
             <div key={chapter.id} style={{ marginBottom: 64 }}>
-              <h1 style={{ fontSize: 32, marginBottom: 24 }}>
-                Part {partNumber} &mdash; Chapter {idx + 1}: {chapter.title}
-              </h1>
-              {(sectionsByChapter[chapter.id] || []).map(section => (
-                <div key={section.id} style={{ marginBottom: 48 }}>
-                  <h2 style={{ fontSize: 24, marginBottom: 16 }}>{section.title}</h2>
-                  <div style={{ fontSize: 18, lineHeight: 1.7, color: '#333', whiteSpace: 'pre-wrap' }}>{section.content ?? ''}</div>
-                </div>
-              ))}
+              {/* Sticky Chapter Header */}
+              <div style={{
+                position: 'sticky',
+                top: 56,
+                zIndex: 9,
+                background: 'rgba(255,255,255,0.96)',
+                borderBottom: '1px solid #eee',
+                padding: '18px 40px 10px 40px',
+                fontWeight: 500,
+                fontSize: 32,
+                boxShadow: '0 1px 6px rgba(0,0,0,0.02)'
+              }}>
+                Chapter {idx + 1}: {chapter.title}
+              </div>
+              <div style={{ padding: '0 40px' }}>
+                {(sectionsByChapter[chapter.id] || []).map(section => (
+                  <div key={section.id} style={{ marginBottom: 48 }}>
+                    <h3 style={{ fontSize: 24, marginBottom: 16 }}>{section.title}</h3>
+                    <div style={{ fontSize: 18, lineHeight: 1.7, color: '#333', whiteSpace: 'pre-wrap' }}>{section.content ?? ''}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })
