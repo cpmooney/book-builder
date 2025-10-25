@@ -32,6 +32,37 @@ interface Chapter {
 }
 
 export default function ReadPartPage() {
+  // Helper to concatenate all content as markdown for download
+  function getFullMarkdownContent() {
+    let md = '';
+    if (partInfo) {
+      md += `# Part ${toRoman(partInfo.partNumber)} ${partInfo.title}\n\n`;
+    }
+    for (const [idx, chapter] of chapters.entries()) {
+      md += `## Chapter ${idx + 1}: ${chapter.title}\n\n`;
+      const sections = sectionsByChapter[chapter.id] || [];
+      for (const section of sections) {
+        md += `### ${section.title}\n\n`;
+        md += `${section.content ?? ''}\n\n`;
+      }
+    }
+    return md;
+  }
+
+  function handleDownload() {
+    const md = getFullMarkdownContent();
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${partInfo ? partInfo.title.replaceAll(' ', '_') : 'part'}.md`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 100);
+  }
   const router = useRouter();
   const params = useParams();
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -77,7 +108,12 @@ export default function ReadPartPage() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 0, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <button type="button" onClick={() => router.back()} style={{ margin: '40px 0 24px 40px', color: '#007bff', background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', position: 'relative', zIndex: 20 }}>← Back</button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button type="button" onClick={() => router.back()} style={{ margin: '40px 0 24px 40px', color: '#007bff', background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', position: 'relative', zIndex: 20 }}>← Back</button>
+        <button type="button" onClick={handleDownload} style={{ margin: '40px 0 24px 0', background: '#007bff', color: 'white', border: 'none', borderRadius: 4, fontSize: 16, padding: '8px 18px', cursor: 'pointer', position: 'relative', zIndex: 20 }}>
+          ⬇️ Download
+        </button>
+      </div>
       {/* Sticky Part Header */}
       <div style={{
         position: 'sticky',
