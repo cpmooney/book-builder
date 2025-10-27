@@ -967,38 +967,72 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         ✏️ Edit {levelConfig.entityLabel}
       </button>
       {level === 'part' && (
-        <button
-          type="button"
-          onClick={() => router.push(`/books/${parentIds.bookId}/parts/${entityId}/read`)}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          📖 Read Entire Part
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => router.push(`/books/${parentIds.bookId}/parts/${entityId}/read`)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            📖 Read Entire Part
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push(`/books/${parentIds.bookId}/parts/${entityId}/summarize`)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            📝 Summarize Part
+          </button>
+        </>
       )}
       {level === 'chapter' && (
-        <button
-          type="button"
-          onClick={() => router.push(`/books/${parentIds.bookId}/parts/${parentIds.partId}/chapters/${entityId}/read`)}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          📖 Read Entire Chapter
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => router.push(`/books/${parentIds.bookId}/parts/${parentIds.partId}/chapters/${entityId}/read`)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            📖 Read Entire Chapter
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push(`/books/${parentIds.bookId}/parts/${parentIds.partId}/chapters/${entityId}/summarize`)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            📝 Summarize Chapter
+          </button>
+        </>
       )}
       {level !== 'section' && (
         <button

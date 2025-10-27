@@ -604,20 +604,36 @@ export async function listSections(uid: string, bookId: string, partId: string, 
   return sectionsWithContent;
 }
 
-/**
- * Lists all blocks for a section, ordered by sortKey
- * @param uid - User ID
- * @param bookId - Book ID
- * @param partId - Part ID
- * @param chapterId - Chapter ID
- * @param sectionId - Section ID
- * @returns Array of blocks
- */
-export async function listBlocks(uid: string, bookId: string, partId: string, chapterId: string, sectionId: string): Promise<Block[]> {
-  const blocksRef = collection(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters', chapterId, 'sections', sectionId, 'blocks');
-  const snapshot = await getDocs(query(blocksRef, orderBy('sortKey')));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Block));
+export async function summarizeSections(uid: string, bookId: string, partId: string, chapterId: string): Promise<Section[]> {
+  const sectionsRef = collection(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters', chapterId, 'sections');
+  const snapshot = await getDocs(query(sectionsRef, orderBy('sortKey')));
+  // Only return metadata: id, title, sortKey, summary
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      title: data.title,
+      sortKey: data.sortKey,
+      summary: data.summary
+    } as Section;
+  });
 }
+
+export async function summarizeChapters(uid: string, bookId: string, partId: string): Promise<Chapter[]> {
+  const chaptersRef = collection(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters');
+  const snapshot = await getDocs(query(chaptersRef, orderBy('sortKey')));
+  const result: Chapter[] = [];
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    result.push({
+      id: doc.id,
+      title: data.title,
+      summary: data.summary
+    } as Chapter);
+  }
+  return result;
+}
+
 
 // Move functions
 
