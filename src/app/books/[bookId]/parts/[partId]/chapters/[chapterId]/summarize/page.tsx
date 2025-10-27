@@ -6,6 +6,22 @@ import { useRouter, useParams } from 'next/navigation';
 import { Section } from '@/types/book-builder';
 
 export default function SummarizeChapterPage() {
+  // Helper to concatenate all summary content for copying
+  function getSummaryText() {
+    let text = '';
+    if (chapter) {
+      text += `Chapter: ${chapter.title || ''}\nSummary: ${chapter.summary || 'No summary'}\n\n`;
+    }
+    summaries.forEach((section, idx) => {
+      text += `${idx + 1}. ${section.title}\nSummary: ${section.summary || 'No summary'}\n\n`;
+    });
+    return text;
+  }
+
+  function handleCopy() {
+    const text = getSummaryText();
+    navigator.clipboard.writeText(text);
+  }
   const router = useRouter();
   const params = useParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +60,10 @@ export default function SummarizeChapterPage() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 40, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <button type="button" onClick={() => router.back()} style={{ marginBottom: 24, color: '#007bff', background: 'none', border: 'none', fontSize: 16, cursor: 'pointer' }}>← Back</button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button type="button" onClick={() => router.back()} style={{ marginBottom: 24, color: '#007bff', background: 'none', border: 'none', fontSize: 16, cursor: 'pointer' }}>← Back</button>
+        <button type="button" onClick={handleCopy} style={{ marginBottom: 24, background: '#28a745', color: 'white', border: 'none', borderRadius: 4, fontSize: 16, padding: '8px 18px', cursor: 'pointer' }}>📋 Copy</button>
+      </div>
       <h2 style={{ marginBottom: 16 }}>Summary for Chapter</h2>
       {chapter && (
         <div style={{ marginBottom: 32, padding: '18px', background: '#e9ecef', borderRadius: 8 }}>
