@@ -18,18 +18,18 @@ function toRoman(num: number): string {
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getPartTitleAndNumber, listChapters, listSections } from '@/features/books/data';
+import { getPartTitleAndNumber, summarizeChapters, summarizeSections } from '@/features/books/data';
 import { useAuth } from '@/components/AuthProvider';
 
 interface Section {
   id: string;
   title: string;
-  content?: string;
+  summary?: string;
 }
 interface Chapter {
   id: string;
   title: string;
-  summary: string;
+  summary?: string;
 }
 
 export default function SummarizePartPage() {
@@ -72,13 +72,13 @@ export default function SummarizePartPage() {
           return;
         }
         const { bookId, partId } = params as { bookId: string; partId: string };
-        const chapters = await listChapters(user.uid, bookId, partId);
+        const chapters = await summarizeChapters(user.uid, bookId, partId);
         const thisPartInfo = await getPartTitleAndNumber(user.uid, bookId, partId);
         setPartInfo(thisPartInfo);
         setChapters(chapters || []);
         const sectionsMap: Record<string, Section[]> = {};
         for (const chapter of chapters) {
-          const sections = await listSections(user.uid, bookId, partId, chapter.id);
+          const sections = await summarizeSections(user.uid, bookId, partId, chapter.id);
           sectionsMap[chapter.id] = sections || [];
         }
         setSectionsByChapter(sectionsMap);
