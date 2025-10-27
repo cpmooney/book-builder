@@ -29,6 +29,7 @@ interface Section {
 interface Chapter {
   id: string;
   title: string;
+  summary: string;
 }
 
 export default function SummarizePartPage() {
