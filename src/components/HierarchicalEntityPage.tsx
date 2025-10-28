@@ -640,7 +640,8 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         }
         case 'chapter': {
           alert('Broken -- need to recursively move sections');
-          return;
+          break;
+          /*
           child = entityData.sections?.find((section: any) => section.id === childId);
           childTitle = child?.title || '';
           // For chapters, get all chapters from the same part as potential parents
@@ -653,6 +654,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
             setAvailableParents(chapters.filter(chapter => chapter.id !== entityId));
           }
           break;
+          */
         }
       }
       
