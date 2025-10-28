@@ -9,7 +9,8 @@ import {
   writeBatch,
   query, 
   orderBy, 
-  DocumentReference 
+  DocumentReference,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { withTimestampsForCreate, withTimestampsForUpdate } from '../../lib/firestore-helpers';
@@ -652,18 +653,14 @@ export async function movePart(
 ): Promise<void> {
   if (fromBookId === toBookId) return;
 
-  const batch = writeBatch(db);
-  
   // Get the part data
   const fromPartRef = doc(db, 'users', uid, 'books', fromBookId, 'parts', partId);
   const partDoc = await getDoc(fromPartRef);
-  
   if (!partDoc.exists()) {
     throw new Error('Part not found');
   }
-
   const partData = partDoc.data() as Part;
-  
+
   // Get last sortKey in target book
   const toPartsRef = collection(db, 'users', uid, 'books', toBookId, 'parts');
   const existingParts = await getDocs(query(toPartsRef, orderBy('sortKey', 'desc')));
@@ -671,16 +668,36 @@ export async function movePart(
 
   // Create new part in target book
   const toPartRef = doc(db, 'users', uid, 'books', toBookId, 'parts', partId);
-  batch.set(toPartRef, withTimestampsForUpdate({
+  await setDoc(toPartRef, withTimestampsForUpdate({
     ...partData,
     bookId: toBookId,
     sortKey: nextSortKey(lastSortKey)
   }));
 
-  // Delete from source book
-//  batch.delete(fromPartRef);
+  // Move chapters
+  const chaptersRef = collection(db, 'users', uid, 'books', fromBookId, 'parts', partId, 'chapters');
+  const chaptersSnap = await getDocs(chaptersRef);
+  for (const chapterDoc of chaptersSnap.docs) {
+    console.log('Moving chapter:', chapterDoc.id);
+    const chapterId = chapterDoc.id;
+    const chapterData = chapterDoc.data();
+    const toChapterRef = doc(db, 'users', uid, 'books', toBookId, 'parts', partId, 'chapters', chapterId);
+    await setDoc(toChapterRef, chapterData);
 
-  await batch.commit();
+    // Move sections for this chapter
+    const sectionsRef = collection(db, 'users', uid, 'books', fromBookId, 'parts', partId, 'chapters', chapterId, 'sections');
+    const sectionsSnap = await getDocs(sectionsRef);
+    for (const sectionDoc of sectionsSnap.docs) {
+      const sectionId = sectionDoc.id;
+      const sectionData = sectionDoc.data();
+      const toSectionRef = doc(db, 'users', uid, 'books', toBookId, 'parts', partId, 'chapters', chapterId, 'sections', sectionId);
+      await setDoc(toSectionRef, sectionData);
+    }
+  }
+
+  // Optionally, delete the original part and its children (if you want a true move)
+  // await deleteDoc(fromPartRef);
+  // TODO: Recursively delete chapters and sections from the source if needed
 }
 
 /**
