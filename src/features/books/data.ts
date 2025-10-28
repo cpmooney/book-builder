@@ -678,7 +678,7 @@ export async function movePart(
   }));
 
   // Delete from source book
-  batch.delete(fromPartRef);
+//  batch.delete(fromPartRef);
 
   await batch.commit();
 }
@@ -729,7 +729,7 @@ export async function moveChapter(
   }));
 
   // Delete from source part
-  batch.delete(fromChapterRef);
+//  batch.delete(fromChapterRef);
 
   await batch.commit();
 }
@@ -777,7 +777,7 @@ export async function moveSection(
   }));
 
   // Delete from source chapter
-  batch.delete(fromSectionRef);
+//  batch.delete(fromSectionRef);
 
   await batch.commit();
 }

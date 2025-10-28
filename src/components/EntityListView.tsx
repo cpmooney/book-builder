@@ -300,7 +300,7 @@ function SortableChildItem({
                 alignItems: 'center'
               }}
             >
-              Move
+              Copy
             </button>
           )}
           <button

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../components/AuthProvider';
-import { listBooks } from '../features/books/data';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -15,16 +14,7 @@ export default function Home() {
       if (!loading && user) {
         setRedirecting(true);
         try {
-          // Get user's books
-          const books = await listBooks(user.uid);
-          
-          if (books.length > 0) {
-            // Redirect to the first book
-            router.push(`/books/${books[0].id}`);
-          } else {
-            // No books yet, redirect to books list to create one
             router.push('/books');
-          }
         } catch (error) {
           console.error('Error loading books:', error);
           // Fallback to books list
