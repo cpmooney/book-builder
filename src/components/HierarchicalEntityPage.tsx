@@ -639,6 +639,8 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
           break;
         }
         case 'chapter': {
+          alert('Broken -- need to recursively move sections');
+          return;
           child = entityData.sections?.find((section: any) => section.id === childId);
           childTitle = child?.title || '';
           // For chapters, get all chapters from the same part as potential parents
