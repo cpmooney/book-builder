@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import type { ChildEntityType, ScaffoldItem } from '@/lib/ai';
+import type { ScaffoldItem } from '@/lib/ai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Server-side only, no NEXT_PUBLIC_ prefix
@@ -20,32 +20,10 @@ export async function POST(request: NextRequest) {
 
     console.log('🏗️ API: Scaffolding children for:', { childType, parentTitle });
 
-    const parentTypeMap = {
-      part: 'Book',
-      chapter: 'Part', 
-      section: 'Chapter'
-    };
-
-    const parentType = parentTypeMap[childType as ChildEntityType];
-    
-    const prompt = `You are an expert content organizer. I need you to parse loose-formatted content into a structured JSON array of ${childType}s.
-
-Parent ${parentType}: "${parentTitle}"
-
-Please convert the following loose content into a JSON array of ${childType}s. Each item should have:
-- "title": A clear, concise title for the ${childType}
-- "summary": A professional 2-3 sentence summary expanding on the content provided
-
-Input content:
-${content}
-
-CRITICAL: Return ONLY the JSON array with NO additional text, explanations, or formatting. Start your response with [ and end with ]. Do not include any text before or after the JSON array.
-
-Required format (return exactly this structure):
-[
-  {"title": "Title 1", "summary": "Detailed summary..."},
-  {"title": "Title 2", "summary": "Detailed summary..."}
-]`;
+    // Use getScaffoldPrompt from scaffoldPrompt.ts
+    // eslint-disable-next-line import/no-relative-packages
+    const { getScaffoldPrompt } = await import('@/lib/ai/scaffoldPrompt');
+    const prompt = getScaffoldPrompt({ content, childType, parentTitle });
 
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',

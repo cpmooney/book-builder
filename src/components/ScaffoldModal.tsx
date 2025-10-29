@@ -103,15 +103,6 @@ export default function ScaffoldModal({
                 <label htmlFor="scaffold-content" className="block text-sm font-medium text-gray-700 mb-2">
                   📝 Loose Content
                 </label>
-                <div className="text-xs text-gray-500 mb-3 space-y-1">
-                  <p>Example format:</p>
-                  <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                    1. Colors<br />
-                    Describe red, green, blue...<br /><br />
-                    2. Shapes<br />
-                    Squares and triangles...
-                  </div>
-                </div>
                 <textarea
                   id="scaffold-content"
                   value={content}
