@@ -745,10 +745,31 @@ export async function moveChapter(
     sortKey: nextSortKey(lastSortKey)
   }));
 
-  // Delete from source part
-//  batch.delete(fromChapterRef);
+  // Copy all sections from the source chapter to the target chapter
+  const fromSectionsRef = collection(db, 'users', uid, 'books', fromBookId, 'parts', fromPartId, 'chapters', chapterId, 'sections');
+  const sectionsSnapshot = await getDocs(fromSectionsRef);
+  
+  console.log(`📋 Copying ${sectionsSnapshot.docs.length} sections for chapter ${chapterId}`);
+  
+  for (const sectionDoc of sectionsSnapshot.docs) {
+    const sectionData = sectionDoc.data() as Section;
+    const toSectionRef = doc(db, 'users', uid, 'books', toBookId, 'parts', toPartId, 'chapters', chapterId, 'sections', sectionDoc.id);
+    
+    batch.set(toSectionRef, withTimestampsForUpdate({
+      ...sectionData,
+      bookId: toBookId,
+      partId: toPartId,
+      chapterId: chapterId
+    }));
+  }
+
+  // Mark the source chapter for deletion (manual verification needed)
+  batch.update(fromChapterRef, withTimestampsForUpdate({
+    markedForDeletion: true
+  }));
 
   await batch.commit();
+  console.log(`✅ Moved chapter ${chapterId} with ${sectionsSnapshot.docs.length} sections (source marked for deletion)`);
 }
 
 /**

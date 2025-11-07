@@ -77,6 +77,7 @@ export interface ChildData extends EntityData {
   chapters?: unknown[];
   sections?: unknown[];
   content?: string;
+  markedForDeletion?: boolean;
   [key: string]: unknown;
 }
 
@@ -149,8 +150,17 @@ function SortableChildItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
+      className={`border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow ${
+        child.markedForDeletion 
+          ? 'border-orange-400 bg-orange-50' 
+          : 'border-gray-300 bg-white'
+      }`}
     >
+      {child.markedForDeletion && (
+        <div className="mb-3 p-2 bg-orange-100 border border-orange-300 rounded text-orange-800 text-sm">
+          ⚠️ <strong>Marked for deletion</strong> - This chapter was moved to another part. Verify the move completed successfully, then delete this chapter manually.
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
         <div
           {...attributes}
@@ -176,12 +186,13 @@ function SortableChildItem({
           <Link 
             href={getChildPath(child)}
             style={{ 
-              textDecoration: 'none', 
-              color: '#007bff',
+              textDecoration: child.markedForDeletion ? 'line-through' : 'none',
+              color: child.markedForDeletion ? '#d97706' : '#007bff',
               fontSize: '16px',
               fontWeight: 'bold',
               display: 'block',
-              wordBreak: 'break-word'
+              wordBreak: 'break-word',
+              opacity: child.markedForDeletion ? 0.7 : 1
             }}
           >
             {config.numberStyle && (

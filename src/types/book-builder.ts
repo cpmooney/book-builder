@@ -28,6 +28,7 @@ export type Chapter = {
   title: string;
   summary?: string;
   sortKey: number;
+  markedForDeletion?: boolean;  // Flag to indicate chapter should be deleted after move verification
   createdAt: any;
   updatedAt: any;
 };

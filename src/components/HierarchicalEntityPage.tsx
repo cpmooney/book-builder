@@ -872,6 +872,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         id: chapter.id,
         title: chapter.title,
         summary: chapter.summary,
+        markedForDeletion: chapter.markedForDeletion,
         sections: [] // TODO: Load sections when implemented
       })) || [];
       break;
