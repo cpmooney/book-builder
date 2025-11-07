@@ -9,7 +9,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, childType, parentTitle, maxTokens = 1000 } = await request.json();
+    const { content, childType, parentTitle, maxTokens = 4000 } = await request.json();
 
     if (!content || !childType || !parentTitle) {
       return NextResponse.json(
@@ -26,11 +26,11 @@ export async function POST(request: NextRequest) {
     const prompt = getScaffoldPrompt({ content, childType, parentTitle });
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: 'You are a precise content organizer. Return ONLY valid JSON arrays with no explanatory text, markdown, or formatting. Your response must start with [ and end with ].'
+          content: 'You are a precise content organizer. Return ONLY valid JSON arrays with no explanatory text, markdown, or formatting. Your response must start with [ and end with ]. Create detailed, comprehensive summaries that preserve the richness of the source material.'
         },
         {
           role: 'user',

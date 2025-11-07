@@ -146,7 +146,7 @@ export async function scaffoldChildren({
   content,
   childType,
   parentTitle,
-  maxTokens = 1000
+  maxTokens = 4000
 }: {
   content: string;
   childType: ChildEntityType;
