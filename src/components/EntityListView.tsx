@@ -81,6 +81,44 @@ export interface ChildData extends EntityData {
   [key: string]: unknown;
 }
 
+function calculateChapterCompletion(sections?: unknown[]): { completed: number; total: number; percentage: number } {
+  if (!sections || !Array.isArray(sections)) {
+    return { completed: 0, total: 0, percentage: 0 };
+  }
+  
+  const total = sections.length;
+  const completed = sections.filter((section: any) => {
+    const content = section.content || '';
+    return content.trim().length > 0;
+  }).length;
+  
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return { completed, total, percentage };
+}
+
+function calculatePartCompletion(chapters?: unknown[]): { completed: number; total: number; percentage: number } {
+  if (!chapters || !Array.isArray(chapters)) {
+    return { completed: 0, total: 0, percentage: 0 };
+  }
+  
+  let totalSections = 0;
+  let completedSections = 0;
+  
+  for (const chapter of chapters) {
+    const chapterSections = (chapter as any).sections;
+    if (chapterSections && Array.isArray(chapterSections)) {
+      totalSections += chapterSections.length;
+      completedSections += chapterSections.filter((section: any) => {
+        const content = section.content || '';
+        return content.trim().length > 0;
+      }).length;
+    }
+  }
+  
+  const percentage = totalSections > 0 ? Math.round((completedSections / totalSections) * 100) : 0;
+  return { completed: completedSections, total: totalSections, percentage };
+}
+
 export interface EntityListViewConfig {
   entityType: 'book' | 'part' | 'chapter' | 'section';
   childType: 'part' | 'chapter' | 'section';
@@ -236,28 +274,105 @@ function SortableChildItem({
       {/* Child count and actions - stacked for mobile */}
       <div style={{ marginTop: '12px' }}>
         {config.childType === 'section' ? (
-          <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
-            Word Count: {(() => {
-              console.log(`🎯 EntityListView rendering section ${child.id}:`, {
-                title: child.title,
-                content: child.content,
-                contentType: typeof child.content,
-                contentLength: child.content?.length || 0,
-                summary: child.summary,
-                summaryLength: child.summary?.length || 0,
-                allKeys: Object.keys(child)
-              });
-              
+          <div style={{ fontSize: '14px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {(() => {
               const content = child.content || '';
               const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+              const hasContent = wordCount > 0;
               
-              console.log(`   - Word count calculation:`, {
-                contentExists: !!content,
-                contentTrimmed: content.trim(),
-                wordCount
-              });
+              return (
+                <>
+                  <span style={{ 
+                    fontSize: '18px',
+                    filter: hasContent ? 'none' : 'grayscale(1)',
+                  }}>
+                    {hasContent ? '✅' : '⚠️'}
+                  </span>
+                  <span style={{ color: hasContent ? '#666' : '#e67e22', fontWeight: hasContent ? 'normal' : 'bold' }}>
+                    {hasContent ? `${wordCount} words` : 'No content yet'}
+                  </span>
+                </>
+              );
+            })()}
+          </div>
+        ) : config.childType === 'chapter' ? (
+          <div style={{ fontSize: '14px', marginBottom: '8px' }}>
+            {(() => {
+              const sections = child.sections as unknown[];
+              const metrics = calculateChapterCompletion(sections);
               
-              return wordCount > 0 ? `${wordCount} words` : 'No content yet';
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ color: '#666', fontSize: '13px' }}>
+                        Sections: {metrics.completed}/{metrics.total} complete
+                      </span>
+                      <span style={{ 
+                        color: metrics.percentage >= 100 ? '#10b981' : metrics.percentage >= 50 ? '#3b82f6' : '#e67e22',
+                        fontSize: '13px',
+                        fontWeight: 'bold'
+                      }}>
+                        {metrics.percentage}%
+                      </span>
+                    </div>
+                    <div style={{ 
+                      width: '100%', 
+                      height: '8px', 
+                      backgroundColor: '#e5e7eb', 
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ 
+                        width: `${metrics.percentage}%`, 
+                        height: '100%', 
+                        backgroundColor: metrics.percentage >= 100 ? '#10b981' : metrics.percentage >= 50 ? '#3b82f6' : '#e67e22',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        ) : config.childType === 'part' ? (
+          <div style={{ fontSize: '14px', marginBottom: '8px' }}>
+            {(() => {
+              const chapters = child.chapters as unknown[];
+              const metrics = calculatePartCompletion(chapters);
+              
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ color: '#666', fontSize: '13px' }}>
+                        Sections: {metrics.completed}/{metrics.total} complete
+                      </span>
+                      <span style={{ 
+                        color: metrics.percentage >= 100 ? '#10b981' : metrics.percentage >= 50 ? '#3b82f6' : '#e67e22',
+                        fontSize: '13px',
+                        fontWeight: 'bold'
+                      }}>
+                        {metrics.percentage}%
+                      </span>
+                    </div>
+                    <div style={{ 
+                      width: '100%', 
+                      height: '8px', 
+                      backgroundColor: '#e5e7eb', 
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ 
+                        width: `${metrics.percentage}%`, 
+                        height: '100%', 
+                        backgroundColor: metrics.percentage >= 100 ? '#10b981' : metrics.percentage >= 50 ? '#3b82f6' : '#e67e22',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                </div>
+              );
             })()}
           </div>
         ) : (

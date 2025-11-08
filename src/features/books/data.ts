@@ -479,6 +479,100 @@ export async function getPartTOC(uid: string, bookId: string, partId: string) {
 }
 
 /**
+ * Gets the table of contents for a specific part with section completion data
+ * @param uid - User ID
+ * @param bookId - Book ID
+ * @param partId - Part ID
+ * @returns Object with part data and its chapters array, each chapter includes sections with metadata
+ */
+export async function getPartTOCWithSections(uid: string, bookId: string, partId: string) {
+  // Get part document
+  const partRef = doc(db, 'users', uid, 'books', bookId, 'parts', partId);
+  const partSnapshot = await getDoc(partRef);
+  
+  if (!partSnapshot.exists()) {
+    throw new Error('Part not found');
+  }
+  
+  const part = { id: partSnapshot.id, ...partSnapshot.data() } as Part;
+  
+  // Get chapters for this part
+  const chaptersRef = collection(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters');
+  const chaptersSnapshot = await getDocs(query(chaptersRef, orderBy('sortKey')));
+  
+  // For each chapter, also fetch its sections (metadata only, not full content)
+  const chapters = await Promise.all(
+    chaptersSnapshot.docs.map(async (chapterDoc) => {
+      const chapter = { id: chapterDoc.id, ...chapterDoc.data() } as Chapter;
+      
+      // Get sections for this chapter (just metadata for completion tracking)
+      const sectionsRef = collection(db, 'users', uid, 'books', bookId, 'parts', partId, 'chapters', chapterDoc.id, 'sections');
+      const sectionsSnapshot = await getDocs(query(sectionsRef, orderBy('sortKey')));
+      const sections = sectionsSnapshot.docs.map(sectionDoc => ({
+        id: sectionDoc.id,
+        ...sectionDoc.data()
+      } as Section));
+      
+      return { ...chapter, sections };
+    })
+  );
+  
+  return { part, chapters };
+}
+
+/**
+ * Gets the table of contents for a book with full completion data
+ * @param uid - User ID
+ * @param bookId - Book ID
+ * @returns Object with book data and parts array, each part contains chapters with sections for completion tracking
+ */
+export async function getBookTOCWithSections(uid: string, bookId: string) {
+  // Get book document
+  const bookRef = doc(db, 'users', uid, 'books', bookId);
+  const bookSnapshot = await getDoc(bookRef);
+  
+  if (!bookSnapshot.exists()) {
+    throw new Error('Book not found');
+  }
+  
+  const book = { id: bookSnapshot.id, ...bookSnapshot.data() } as Book;
+  
+  const partsRef = collection(db, 'users', uid, 'books', bookId, 'parts');
+  const partsSnapshot = await getDocs(query(partsRef, orderBy('sortKey')));
+  
+  const parts = await Promise.all(
+    partsSnapshot.docs.map(async (partDoc) => {
+      const part = { id: partDoc.id, ...partDoc.data() } as Part;
+      
+      // Get chapters for this part
+      const chaptersRef = collection(db, 'users', uid, 'books', bookId, 'parts', partDoc.id, 'chapters');
+      const chaptersSnapshot = await getDocs(query(chaptersRef, orderBy('sortKey')));
+      
+      // For each chapter, also fetch its sections
+      const chapters = await Promise.all(
+        chaptersSnapshot.docs.map(async (chapterDoc) => {
+          const chapter = { id: chapterDoc.id, ...chapterDoc.data() } as Chapter;
+          
+          // Get sections for this chapter
+          const sectionsRef = collection(db, 'users', uid, 'books', bookId, 'parts', partDoc.id, 'chapters', chapterDoc.id, 'sections');
+          const sectionsSnapshot = await getDocs(query(sectionsRef, orderBy('sortKey')));
+          const sections = sectionsSnapshot.docs.map(sectionDoc => ({
+            id: sectionDoc.id,
+            ...sectionDoc.data()
+          } as Section));
+          
+          return { ...chapter, sections };
+        })
+      );
+      
+      return { part, chapters };
+    })
+  );
+  
+  return { ...book, parts };
+}
+
+/**
  * Gets chapter summary with its sections
  * @param uid - User ID
  * @param bookId - Book ID

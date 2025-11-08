@@ -13,8 +13,10 @@ import EntityListView, {
 
 // Import data functions
 import {
-  getBookTOC, 
+  getBookTOC,
+  getBookTOCWithSections,
   getPartTOC,
+  getPartTOCWithSections,
   getSectionContent,
   listSections,
   createPart, 
@@ -150,13 +152,13 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
 
       switch (level) {
         case 'book':
-          data = await getBookTOC(user.uid, entityId);
+          data = await getBookTOCWithSections(user.uid, entityId);
           setEntityData(data);
           break;
           
         case 'part':
           if (!parentIds.bookId) throw new Error('Book ID required for part');
-          data = await getPartTOC(user.uid, parentIds.bookId, entityId);
+          data = await getPartTOCWithSections(user.uid, parentIds.bookId, entityId);
           setEntityData(data);
           break;
           
@@ -873,7 +875,7 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         title: chapter.title,
         summary: chapter.summary,
         markedForDeletion: chapter.markedForDeletion,
-        sections: [] // TODO: Load sections when implemented
+        sections: chapter.sections || []
       })) || [];
       break;
       
