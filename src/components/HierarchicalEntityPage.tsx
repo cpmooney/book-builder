@@ -250,28 +250,49 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
   const handleCreateChild = async () => {
     console.log('handleCreateChild called for level:', level);
     
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      console.error('No user ID available');
+      return;
+    }
 
     try {
       const title = prompt(`Enter ${levelConfig.childLabel} title:`);
-      if (!title) return;
+      if (!title?.trim()) {
+        console.log('User cancelled or no title entered');
+        return;
+      }
       
-      const summary = prompt(`Enter ${levelConfig.childLabel} summary:`);
-      if (!summary) return;
-      
-      const childData = { title, summary };
+      console.log('Creating child with:', { title, level, entityId, parentIds });
+      // Create with empty summary - user can edit later to add details
+      const childData = { title: title.trim(), summary: '' };
 
       switch (level) {
         case 'book':
+          console.log('Creating part...');
           await createPart(user.uid, entityId, childData);
           break;
         case 'part':
-          if (!parentIds.bookId) return;
+          if (!parentIds.bookId) {
+            console.error('No bookId available');
+            return;
+          }
+          console.log('Creating chapter...');
           await createChapter(user.uid, parentIds.bookId, entityId, childData);
           break;
         case 'chapter':
-          if (!parentIds.bookId || !parentIds.partId) return;
+          if (!parentIds.bookId || !parentIds.partId) {
+            console.error('Missing bookId or partId:', { bookId: parentIds.bookId, partId: parentIds.partId });
+            return;
+          }
+          console.log('Creating section with params:', {
+            userId: user.uid,
+            bookId: parentIds.bookId,
+            partId: parentIds.partId,
+            chapterId: entityId,
+            data: childData
+          });
           await createSection(user.uid, parentIds.bookId, parentIds.partId, entityId, childData);
+          console.log('Section created successfully');
           break;
         default:
           console.log('Create not implemented for', level);
@@ -279,9 +300,12 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       }
 
       // Reload data
+      console.log('Reloading data...');
       await loadData();
+      console.log('Data reloaded successfully');
     } catch (error) {
       console.error('Error creating child:', error);
+      alert(`Error creating ${levelConfig.childLabel}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
