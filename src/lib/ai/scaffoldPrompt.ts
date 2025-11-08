@@ -1,4 +1,4 @@
-import type { ChildEntityType } from './ai';
+import { ChildEntityType } from "../ai";
 
 export function getScaffoldPrompt({ content, childType, parentTitle }: {
   content: string;
