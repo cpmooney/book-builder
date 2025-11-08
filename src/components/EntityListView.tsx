@@ -135,7 +135,6 @@ export interface EntityListViewProps {
   config: EntityListViewConfig;
   breadcrumbs: BreadcrumbItem[];
   loading: boolean;
-  onEdit: (id: string, title: string, summary: string) => void;
   onDelete: (id: string, title: string) => void;
   onMove?: (id: string) => void;
   onCreate: () => Promise<void>;
@@ -150,7 +149,6 @@ interface SortableChildItemProps {
   child: ChildData;
   childNumber: number;
   config: EntityListViewConfig;
-  onEdit: (id: string, title: string, summary: string) => void;
   onDelete: (id: string, title: string) => void;
   onMove?: (id: string) => void;
   getChildPath: (child: ChildData) => string;
@@ -161,7 +159,6 @@ function SortableChildItem({
   child, 
   childNumber, 
   config,
-  onEdit, 
   onDelete, 
   onMove,
   getChildPath,
@@ -385,12 +382,8 @@ function SortableChildItem({
           </div>
         )}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(child.id, child.title, child.summary || '');
-            }}
+          <Link
+            href={`${getChildPath(child)}/edit`}
             style={{
               padding: '8px 16px',
               backgroundColor: '#6c757d',
@@ -401,11 +394,12 @@ function SortableChildItem({
               fontSize: '14px',
               minHeight: '40px',
               display: 'flex',
-              alignItems: 'center'
+              alignItems: 'center',
+              textDecoration: 'none'
             }}
           >
             Edit
-          </button>
+          </Link>
           {onMove && (
             <button
               type="button"
@@ -462,7 +456,6 @@ export default function EntityListView({
   config,
   breadcrumbs,
   loading,
-  onEdit,
   onDelete,
   onMove,
   onCreate,
@@ -643,7 +636,6 @@ export default function EntityListView({
                     child={child}
                     childNumber={index + 1}
                     config={config}
-                    onEdit={onEdit}
                     onDelete={onDelete}
                     onMove={onMove}
                     getChildPath={getChildPath}

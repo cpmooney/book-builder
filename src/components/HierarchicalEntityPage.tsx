@@ -22,10 +22,6 @@ import {
   createPart, 
   createChapter, 
   createSection,
-  updateBook,
-  updatePart, 
-  updateChapter,
-  updateSection,
   deletePart, 
   deleteChapter, 
   deleteSection,
@@ -41,7 +37,6 @@ import {
   moveSection,
   listBooks
 } from '../features/books/data';// Import edit components
-import EntityEditModal from './EntityEditModal';
 import EntityOverview from './EntityOverview';
 import BookOverviewModal from './BookOverviewModal';
 import NoteEditModal, { type NoteFormData } from './NoteEditModal';
@@ -102,8 +97,6 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
   const { user, loading: authLoading } = useAuth();
   const [entityData, setEntityData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [createChildModalOpen, setCreateChildModalOpen] = useState(false);
   const [overviewModalOpen, setOverviewModalOpen] = useState(false);
   
   // Notes state
@@ -117,12 +110,9 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
   const [moveEntityTitle, setMoveEntityTitle] = useState<string>('');
   const [availableParents, setAvailableParents] = useState<{ id: string; title: string; }[]>([]);
   
-  // Child editing state
-  const [editChildModalOpen, setEditChildModalOpen] = useState(false);
-  const [editingChildId, setEditingChildId] = useState<string>('');
-  const [editingChildTitle, setEditingChildTitle] = useState<string>('');
-  const [editingChildSummary, setEditingChildSummary] = useState<string>('');
-
+  
+  // Child editing state - removed, now using dedicated edit pages
+  
   // Scaffold state
   const [scaffoldModalOpen, setScaffoldModalOpen] = useState(false);
   
@@ -213,12 +203,6 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
     loadData();
   }, [user?.uid, level, entityId, parentIds]);
 
-  // Generic create child function
-  const handleCreateChild = async () => {
-    console.log('handleCreateChild called for level:', level);
-    setCreateChildModalOpen(true);
-  };
-
   // Handle scaffold children
   const handleScaffold = () => {
     setScaffoldModalOpen(true);
@@ -262,29 +246,31 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
     }
   };
 
-  // Handle saving new child from modal
-  const handleSaveNewChild = async (title: string, summary: string) => {
+  // Generic create child function
+  const handleCreateChild = async () => {
+    console.log('handleCreateChild called for level:', level);
+    
     if (!user?.uid) return;
 
     try {
-      console.log('Creating child:', { level, title, summary, parentIds });
+      const title = prompt(`Enter ${levelConfig.childLabel} title:`);
+      if (!title) return;
       
-      // For all levels, use summary field (sections have both summary and content)
+      const summary = prompt(`Enter ${levelConfig.childLabel} summary:`);
+      if (!summary) return;
+      
       const childData = { title, summary };
 
       switch (level) {
         case 'book':
-          console.log('Creating part for book:', entityId);
           await createPart(user.uid, entityId, childData);
           break;
         case 'part':
           if (!parentIds.bookId) return;
-          console.log('Creating chapter for part:', entityId, 'in book:', parentIds.bookId);
           await createChapter(user.uid, parentIds.bookId, entityId, childData);
           break;
         case 'chapter':
           if (!parentIds.bookId || !parentIds.partId) return;
-          console.log('Creating section for chapter:', entityId, 'in part:', parentIds.partId, 'in book:', parentIds.bookId);
           await createSection(user.uid, parentIds.bookId, parentIds.partId, entityId, childData);
           break;
         default:
@@ -293,175 +279,30 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       }
 
       // Reload data
-      console.log('Reloading data after creation...');
-      const loadData = async () => {
-        let data: unknown;
-        switch (level) {
-          case 'book':
-            data = await getBookTOC(user.uid, entityId);
-            setEntityData(data);
-            break;
-          case 'part':
-            data = await getPartTOC(user.uid, parentIds.bookId!, entityId);
-            setEntityData(data);
-            break;
-          case 'chapter': {
-            if (!parentIds.bookId || !parentIds.partId) {
-              throw new Error('Book ID and Part ID required for chapter');
-            }
-            const bookData = await getBookTOC(user.uid, parentIds.bookId);
-            const partData = bookData.parts?.find((p: { part: { id: string } }) => p.part.id === parentIds.partId);
-            const chapterData = partData?.chapters?.find((c: { id: string }) => c.id === entityId);
-            
-            if (!chapterData) throw new Error('Chapter not found');
-            
-            // Load sections for this chapter
-            const sections = await listSections(user.uid, parentIds.bookId, parentIds.partId, entityId);
-            console.log('Loaded sections:', sections);
-            
-            setEntityData({
-              chapter: chapterData,
-              sections: sections
-            });
-            break;
-          }
-        }
-      };
       await loadData();
-      console.log('Data reloaded, closing modal');
-      setCreateChildModalOpen(false);
-        } catch (error) {
+    } catch (error) {
       console.error('Error creating child:', error);
-      alert(`Error creating ${levelConfig.childLabel.toLowerCase()}`);
     }
   };
 
-  // Handle saving child entity edits from modal
-  const handleSaveChildEdit = async (title: string, summary: string) => {
-    if (!user?.uid || !editingChildId) return;
-
-    try {
-      console.log('Updating child:', { level, childId: editingChildId, title, summary });
-      
-      const childData = { title, summary };
-
-      switch (level) {
-        case 'book':
-          // Editing a part
-          await updatePart(user.uid, entityId, editingChildId, childData);
-          break;
-        case 'part':
-          // Editing a chapter
-          if (!parentIds.bookId) return;
-          await updateChapter(user.uid, parentIds.bookId, entityId, editingChildId, childData);
-          break;
-        case 'chapter':
-          // Editing a section
-          if (!parentIds.bookId || !parentIds.partId) return;
-          await updateSection(user.uid, parentIds.bookId, parentIds.partId, entityId, editingChildId, childData);
-          break;
-        default:
-          console.log('Edit not implemented for', level);
-          return;
-      }
-
-      // Reload data after update
-      const loadData = async () => {
-        let data: unknown;
-        switch (level) {
-          case 'book':
-            data = await getBookTOC(user.uid, entityId);
-            setEntityData(data);
-            break;
-          case 'part':
-            data = await getPartTOC(user.uid, parentIds.bookId!, entityId);
-            setEntityData(data);
-            break;
-          case 'chapter': {
-            if (!parentIds.bookId || !parentIds.partId) {
-              throw new Error('Book ID and Part ID required for chapter');
-            }
-            const bookData = await getBookTOC(user.uid, parentIds.bookId);
-            const partData = bookData.parts?.find((p: { part: { id: string } }) => p.part.id === parentIds.partId);
-            const chapterData = partData?.chapters?.find((c: { id: string }) => c.id === entityId);
-            
-            if (!chapterData) throw new Error('Chapter not found');
-            
-            // Load sections for this chapter
-            const sections = await listSections(user.uid, parentIds.bookId, parentIds.partId, entityId);
-            
-            setEntityData({
-              chapter: chapterData,
-              sections: sections
-            });
-            break;
-          }
-        }
-      };
-      await loadData();
-      
-      // Close modal and reset state
-      setEditChildModalOpen(false);
-      setEditingChildId('');
-      setEditingChildTitle('');
-      setEditingChildSummary('');
-    } catch (error) {
-      console.error('Error updating child:', error);
-      alert(`Error updating ${levelConfig.childLabel.toLowerCase()}`);
-    }
-  };
-
-  // Handle saving current entity from modal
-
-  // Generic edit current entity function
+  // Generic edit current entity function - navigate to edit page
   const handleEditEntity = () => {
-    setEditModalOpen(true);
+    router.push(`${getEntityPath()}/edit`);
   };
 
-  // Generic save entity function
-  const handleSaveEntity = async (title: string, summary: string) => {
-    if (!entityData || !user?.uid) return;
-
-    try {
-      const updateData = { title, summary };
-
-      switch (level) {
-        case 'book':
-          await updateBook(user.uid, entityId, updateData);
-          break;
-        case 'part':
-          if (!parentIds.bookId) return;
-          await updatePart(user.uid, parentIds.bookId, entityId, updateData);
-          break;
-        case 'chapter':
-          if (!parentIds.bookId || !parentIds.partId) return;
-          await updateChapter(user.uid, parentIds.bookId, parentIds.partId, entityId, updateData);
-          break;
-        default:
-          console.log('Update not implemented for', level);
-          return;
-      }
-
-      // Reload data
-      const loadData = async () => {
-        let data: any;
-        switch (level) {
-          case 'book':
-            data = await getBookTOC(user.uid, entityId);
-            setEntityData(data);
-            break;
-          case 'part':
-            data = await getPartTOC(user.uid, parentIds.bookId!, entityId);
-            setEntityData(data);
-            break;
-          // Add chapter case when needed
-        }
-      };
-      await loadData();
-      setEditModalOpen(false);
-    } catch (error) {
-      console.error('Error updating entity:', error);
-      alert(`Error updating ${levelConfig.entityLabel.toLowerCase()}`);
+  // Helper to get current entity path
+  const getEntityPath = () => {
+    switch (level) {
+      case 'book':
+        return `/books/${entityId}`;
+      case 'part':
+        return `/books/${parentIds.bookId}/parts/${entityId}`;
+      case 'chapter':
+        return `/books/${parentIds.bookId}/parts/${parentIds.partId}/chapters/${entityId}`;
+      case 'section':
+        return `/books/${parentIds.bookId}/parts/${parentIds.partId}/chapters/${parentIds.chapterId}/sections/${entityId}`;
+      default:
+        return '/';
     }
   };
 
@@ -837,7 +678,6 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
       }}
       breadcrumbs={[]}
       loading={true}
-      onEdit={() => {}}
       onDelete={() => {}}
       onCreate={async () => {}}
       onReorder={async () => {}}
@@ -1166,12 +1006,6 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
           config={entityConfig}
           breadcrumbs={breadcrumbs}
           loading={loading}
-          onEdit={(id, title, summary) => {
-            setEditingChildId(id);
-            setEditingChildTitle(title);
-            setEditingChildSummary(summary);
-            setEditChildModalOpen(true);
-          }}
           onDelete={handleDeleteChild}
           onMove={handleMoveChild}
           onCreate={handleCreateChild}
@@ -1228,44 +1062,6 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
           />
         </div>
       )}
-
-      <EntityEditModal
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        onSave={handleSaveEntity}
-        initialTitle={entityForView?.title || ''}
-        initialSummary={entityForView?.summary || ''}
-        entityType={level}
-        mode="edit"
-        entityData={entityData}
-      />
-
-      <EntityEditModal
-        isOpen={createChildModalOpen}
-        onClose={() => setCreateChildModalOpen(false)}
-        onSave={handleSaveNewChild}
-        initialTitle=""
-        initialSummary=""
-        entityType={levelConfig.childType}
-        mode="create"
-        entityData={entityData}
-      />
-
-      <EntityEditModal
-        isOpen={editChildModalOpen}
-        onClose={() => {
-          setEditChildModalOpen(false);
-          setEditingChildId('');
-          setEditingChildTitle('');
-          setEditingChildSummary('');
-        }}
-        onSave={handleSaveChildEdit}
-        initialTitle={editingChildTitle}
-        initialSummary={editingChildSummary}
-        entityType={levelConfig.childType}
-        mode="edit"
-        entityData={entityData}
-      />
 
       <EntityOverview
         isOpen={overviewModalOpen}
