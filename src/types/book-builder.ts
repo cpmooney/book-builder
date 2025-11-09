@@ -42,6 +42,16 @@ export type Section = {
   title: string;
   summary?: string;  // Brief summary for chapter view
   content?: string;  // Full content for section editing
+  analysis?: {
+    summary?: string;
+    tightness?: Array<{
+      score: number;
+      reasoning: string;
+      suggestions: string[];
+      timestamp: Date | { seconds: number; nanoseconds: number };
+    }>;
+    lastAnalyzed?: Date | { seconds: number; nanoseconds: number };
+  };
   sortKey: number;
   createdAt: any;
   updatedAt: any;

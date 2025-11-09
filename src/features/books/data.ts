@@ -693,7 +693,16 @@ export async function listSections(uid: string, bookId: string, partId: string, 
   // Load content for each section
   const sectionsWithContent = await Promise.all(
     snapshot.docs.map(async (doc) => {
-      return { id: doc.id, ...doc.data() } as Section;
+      const data = doc.data();
+      console.log('📦 listSections - Loading section:', {
+        id: doc.id,
+        title: data.title,
+        hasAnalysis: !!data.analysis,
+        analysisKeys: data.analysis ? Object.keys(data.analysis) : [],
+        hasTightness: !!(data.analysis?.tightness),
+        tightnessLength: data.analysis?.tightness?.length || 0
+      });
+      return { id: doc.id, ...data } as Section;
     })
   );
   return sectionsWithContent;

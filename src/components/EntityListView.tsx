@@ -271,23 +271,79 @@ function SortableChildItem({
       {/* Child count and actions - stacked for mobile */}
       <div style={{ marginTop: '12px' }}>
         {config.childType === 'section' ? (
-          <div style={{ fontSize: '14px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ fontSize: '14px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             {(() => {
               const content = child.content || '';
               const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
               const hasContent = wordCount > 0;
               
+              // Get tightness analysis data
+              const analysis = (child as { analysis?: { tightness?: Array<{ score: number }> } }).analysis;
+              const tightnessResults = analysis?.tightness;
+              const hasTightness = tightnessResults && Array.isArray(tightnessResults) && tightnessResults.length > 0;
+              const minScore = hasTightness 
+                ? Math.min(...tightnessResults.map((t) => t.score))
+                : null;
+              
+              // Debug logging - log ALL sections to see what data we have
+              console.log('🔍 Section Debug:', {
+                title: child.title,
+                hasAnalysis: !!analysis,
+                analysisKeys: analysis ? Object.keys(analysis) : [],
+                tightnessResults,
+                hasTightness,
+                minScore,
+                childKeys: Object.keys(child)
+              });
+              
+              // Determine badge colors
+              const getBgColor = (score: number) => {
+                if (score >= 7) return '#d1fae5';
+                if (score >= 4) return '#fef3c7';
+                return '#fee2e2';
+              };
+              const getBorderColor = (score: number) => {
+                if (score >= 7) return '#10b981';
+                if (score >= 4) return '#f59e0b';
+                return '#ef4444';
+              };
+              const getTextColor = (score: number) => {
+                if (score >= 7) return '#065f46';
+                if (score >= 4) return '#92400e';
+                return '#991b1b';
+              };
+              
               return (
                 <>
-                  <span style={{ 
-                    fontSize: '18px',
-                    filter: hasContent ? 'none' : 'grayscale(1)',
-                  }}>
-                    {hasContent ? '✅' : '⚠️'}
-                  </span>
-                  <span style={{ color: hasContent ? '#666' : '#e67e22', fontWeight: hasContent ? 'normal' : 'bold' }}>
-                    {hasContent ? `${wordCount} words` : 'No content yet'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ 
+                      fontSize: '18px',
+                      filter: hasContent ? 'none' : 'grayscale(1)',
+                    }}>
+                      {hasContent ? '✅' : '⚠️'}
+                    </span>
+                    <span style={{ color: hasContent ? '#666' : '#e67e22', fontWeight: hasContent ? 'normal' : 'bold' }}>
+                      {hasContent ? `${wordCount} words` : 'No content yet'}
+                    </span>
+                  </div>
+                  
+                  {hasTightness && minScore !== null && (
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 10px',
+                      backgroundColor: getBgColor(minScore),
+                      border: `1px solid ${getBorderColor(minScore)}`,
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      color: getTextColor(minScore)
+                    }}>
+                      <span>🎯</span>
+                      <span>Tightness: {minScore}/10</span>
+                    </div>
+                  )}
                 </>
               );
             })()}

@@ -753,7 +753,8 @@ export default function HierarchicalEntityPage({ config }: Readonly<Hierarchical
         id: section.id,
         title: section.title,
         summary: section.summary,  // Sections use summary for chapter view
-        content: section.content   // Add content for word count
+        content: section.content,  // Add content for word count
+        analysis: section.analysis // Add analysis data for tightness display
       })) || [];
       break;
       
