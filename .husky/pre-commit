@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check if package-lock.json contains "ramseysolutions"
+if git diff --cached --name-only | grep -q "package-lock.json"; then
+  if git diff --cached package-lock.json | grep -q "ramseysolutions"; then
+    echo "❌ ERROR: package-lock.json contains 'ramseysolutions'"
+    echo "This indicates the package was installed from the wrong artifactory."
+    echo "Please use your custom npm script to reinstall packages correctly."
+    exit 1
+  fi
+  
+  # Also check the full file content if it's being added/modified
+  if git show :package-lock.json 2>/dev/null | grep -q "ramseysolutions"; then
+    echo "❌ ERROR: package-lock.json contains 'ramseysolutions'"
+    echo "This indicates the package was installed from the wrong artifactory."
+    echo "Please use your custom npm script to reinstall packages correctly."
+    exit 1
+  fi
+fi
+
+echo "✅ Pre-commit checks passed"
