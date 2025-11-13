@@ -33,8 +33,9 @@ export function getFirebaseAuth() {
 }
 
 export function getFirebaseFirestore() {
-  getFirebaseApp();
-  return getFirestore();
+  const app = getFirebaseApp();
+  // Use the book-builder named database instead of (default)
+  return getFirestore(app, 'book-builder');
 }
 
 // Export a default db instance for convenience

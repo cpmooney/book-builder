@@ -14,7 +14,8 @@ const firebaseConfig = {
 // Initialize Firebase only once
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-export const db = getFirestore(app);
+// Use the book-builder named database instead of (default)
+export const db = getFirestore(app, 'book-builder');
 export const auth = getAuth(app);
 
 export default app;
